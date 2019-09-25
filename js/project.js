@@ -8,6 +8,8 @@ var scene, renderer, robot, target, support,arm;
 var geometry, material,mesh;
 var current_camera = 1;
 
+var WidthHeight= new THREE.Vector2(window.innerWidth,window.innerHeight);
+
 var Speed = 0.5;
 
 var KeyboardState = {
@@ -142,7 +144,17 @@ function render() {
 }
 
 function onResize() {
-
+  'use strict';
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  if (window.innerHeight>0 && window,innerWidth>0){
+    renderer.getSize(WidthHeight);
+    camera[1].aspect = WidthHeight.x / WidthHeight.y;
+    camera[2].aspect = WidthHeight.x / WidthHeight.y;
+    camera[3].aspect = WidthHeight.x / WidthHeight.y;
+    camera[1].updateProjectionMatrix();
+    camera[2].updateProjectionMatrix();
+    camera[3].updateProjectionMatrix();
+  }
 }
 
 
