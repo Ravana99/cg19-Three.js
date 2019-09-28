@@ -33,24 +33,20 @@ var KeyboardState = {
 
 
 //INPUT
-onkeydown = onkeyup = function(e){
+onkeydown = onkeyup = function(e) {
   	e = e || event; // to deal with IE
 	KeyboardState[e.keyCode] = e.type == 'keydown';
 	  
   	if (KeyboardState[37]) { //left
-		console.log('left')
 		robot.position.x-=Speed;
   	}
   	if (KeyboardState[38]) { //up
-		console.log('up')
 		robot.position.z-=Speed;
   	}
   	if (KeyboardState[39]) { //right
-		console.log('right')
 		robot.position.x+=Speed;
   	}
   	if (KeyboardState[40]) { //down
-		console.log('down')
 		robot.position.z+=Speed;
   	}
   	if (KeyboardState[49]) { //1
@@ -90,18 +86,26 @@ onkeydown = onkeyup = function(e){
 class Arm extends THREE.Object3D {
   	constructor() {
 		super();
+		this.armLength = 2;
+		this.armHeight = 20;
+		this.articulationRadius = 2;
+		this.handHeight = 1;
+		this.handLength = 5;
+		this.fingerHeight = 4;
+		this.fingerLength = 0.5;
+
 		//Arm
-		addRectangularPrism(this,0,11.5,0,0xffffff,2,20,2);
+		addRectangularPrism(this,0,17,0,0xffffff,this.armLength,this.armHeight,this.armLength);
 
 		//Forearm
-		addSphere(this,0,21.5,0,0xffff00,2);
-		addRectangularPrism(this,10,21.5,0,0xffffff,20,2,2);
+		addSphere(this,0,27,0,0xffff00,this.articulationRadius);
+		addRectangularPrism(this,10,27,0,0xffffff,this.armHeight,this.armLength,this.armLength);
 
 		//Hand
-		addSphere(this,20,21.5,0,0xffff00,2);
-		addRectangularPrism(this,22.5,21.5,0,0x0000ff,1,5,5);
-		addRectangularPrism(this,25,23.5,0,0xff0000,4,0.5,0.5);
-		addRectangularPrism(this,25,19.5,0,0xff0000,4,0.5,0.5);
+		addSphere(this,20,27,0,0xffff00,this.articulationRadius);
+		addRectangularPrism(this,22.5,27,0,0x0000ff,this.handHeight,this.handLength,this.handLength);
+		addRectangularPrism(this,25,29,0,0xff0000,this.fingerHeight,this.fingerLength,this.fingerLength);
+		addRectangularPrism(this,25,25,0,0xff0000,this.fingerHeight,this.fingerLength,this.fingerLength);
   	}
   	getRotationZ() {
 		return this.rotation.z;
@@ -120,17 +124,17 @@ class Platform extends THREE.Object3D {
 		this.boardLength = 30;
 		this.boardHeight = 3;
 		this.wheelRadius = 2;
-		this.semisphereRadius = 4
+		this.semisphereRadius = 4;
 
 		//Base
-		addRectangularPrism(this,0,0,0,0x00ff00,this.boardLength,this.boardHeight,this.boardLength);
-		addSemiSphere(this,0,1.5,0,0xffff00,this.semisphereRadius);
+		addRectangularPrism(this,0,5.5,0,0x00ff00,this.boardLength,this.boardHeight,this.boardLength);
+		addSemiSphere(this,0,7,0,0xffff00,this.semisphereRadius);
 
 		//Wheels
-		addSphere(this,12,-3.5,12,0xff0000,this.wheelRadius);
-		addSphere(this,12,-3.5,-12,0xff0000,this.wheelRadius);
-		addSphere(this,-12,-3.5,12,0xff0000,this.wheelRadius);
-		addSphere(this,-12,-3.5,-12,0xff0000,this.wheelRadius);
+		addSphere(this,12,2,12,0xff0000,this.wheelRadius);
+		addSphere(this,12,2,-12,0xff0000,this.wheelRadius);
+		addSphere(this,-12,2,12,0xff0000,this.wheelRadius);
+		addSphere(this,-12,2,-12,0xff0000,this.wheelRadius);
 	}
 }
 
@@ -143,9 +147,9 @@ class Robot extends THREE.Object3D {
 		this.add(this.platform);
 		this.attach(this.arm);
 
-		this.position.x=x;
-		this.position.y=y;
-		this.position.z=z;
+		this.position.x = x;
+		this.position.y = y;
+		this.position.z = z;
 
 		scene.add(this);
   	}
@@ -161,10 +165,12 @@ class Robot extends THREE.Object3D {
 }
 
 class Target extends THREE.Object3D {
-  	constructor(x, y, z) {
+  	constructor(x,y,z) {
 		super();
+		this.innerRadius = 2;
+		this.tubeRadius = 1;
 
-		addTorus(this, 0, 0, 0, 0xff00ff, 2, 1);
+		addTorus(this,0,5.5,0,0xff00ff,this.innerRadius,this.tubeRadius);
 
 		this.position.x = x;
 		this.position.y = y;
@@ -174,10 +180,12 @@ class Target extends THREE.Object3D {
 }
 
 class Support extends THREE.Object3D {
-  	constructor(x, y, z) {
+  	constructor(x,y,z) {
 		super();
+		this.supportRadius = 4;
+		this.supportHeight = 20;
 
-		addCylinder(this, 0, 0, 0, 0x0000ff, 4, 20);
+		addCylinder(this,0,5.5,0,0x0000ff,this.supportRadius,this.supportHeight);
 
 		this.position.x = x;
 		this.position.y = y;
@@ -187,57 +195,57 @@ class Support extends THREE.Object3D {
 }
 
 
-//------GEOMETRIES------//
+// ------ GEOMETRIES ------ //
 
-function addCylinder(obj, x, y, z, color, radius, height) {
-	geometry = new THREE.CylinderGeometry(radius, radius, height, 15);
+function addCylinder(obj,x,y,z,color,radius,height) {
+	geometry = new THREE.CylinderGeometry(radius,radius,height,15);
 	material = new THREE.MeshBasicMaterial({
 	  color: color, wireframe: true
 	});
 
 	mesh = new THREE.Mesh(geometry,material);
-	mesh.position.set(x, y, z);
+	mesh.position.set(x,y,z);
 	obj.add(mesh);
 }
 
-function addTorus(obj, x, y, z, color, radius, tube) {
-  	geometry = new THREE.TorusGeometry(radius+tube, tube, 20, 20);
+function addTorus(obj,x,y,z,color,radius,tube) {
+  	geometry = new THREE.TorusGeometry(radius+tube,tube,20,20);
   	material = new THREE.MeshBasicMaterial({
 		color: color, wireframe: true
   	});
-  	mesh = new THREE.Mesh(geometry, material);
-  	mesh.position.set(x, y, z);
+  	mesh = new THREE.Mesh(geometry,material);
+  	mesh.position.set(x,y,z);
   	mesh.rotateY(Math.PI / 2);
   	obj.add(mesh);
 }
 
-function addSemiSphere(obj, x, y, z, color, radius) {
-	geometry = new THREE.SphereGeometry(radius, 20, 20, 0, Math.PI*2, 0, Math.PI/2);
+function addSemiSphere(obj,x,y,z,color,radius) {
+	geometry = new THREE.SphereGeometry(radius,20,20,0,Math.PI*2,0,Math.PI/2);
 	material = new THREE.MeshBasicMaterial({
 	  color: color, wireframe: true
 	});
-	mesh = new THREE.Mesh(geometry, material);
-	mesh.position.set(x, y, z);
+	mesh = new THREE.Mesh(geometry,material);
+	mesh.position.set(x,y,z);
 	obj.add(mesh);
 }
 
-function addSphere(obj, x, y, z, color, radius) {
-  	geometry = new THREE.SphereGeometry(radius, 20, 20);
+function addSphere(obj,x,y,z,color,radius) {
+  	geometry = new THREE.SphereGeometry(radius,20,20);
   	material = new THREE.MeshBasicMaterial({
 		color: color, wireframe: true
   	});
-  	mesh = new THREE.Mesh(geometry, material);
-  	mesh.position.set(x, y, z);
+  	mesh = new THREE.Mesh(geometry,material);
+  	mesh.position.set(x,y,z);
   	obj.add(mesh);
 }
 
-function addRectangularPrism(obj, x, y, z, color, dimX, dimY, dimZ) {
-	geometry = new THREE.BoxGeometry(dimX, dimY, dimZ);
+function addRectangularPrism(obj,x,y,z,color,dimX,dimY,dimZ) {
+	geometry = new THREE.BoxGeometry(dimX,dimY,dimZ);
 	material = new THREE.MeshBasicMaterial({
-		color:color, wireframe:true
+		color: color, wireframe: true
   	});
   	mesh = new THREE.Mesh(geometry,material);
-  	mesh.position.set(x, y, z);
+  	mesh.position.set(x,y,z);
   	obj.add(mesh);
 }
 
@@ -245,8 +253,8 @@ function addRectangularPrism(obj, x, y, z, color, dimX, dimY, dimZ) {
 // ------ CAMERAS ------ //
 
 function createCamera1() {
-	camera[1] = new THREE.PerspectiveCamera(70, window.innerWidth/
-	window.innerHeight, 1, 1000);
+	camera[1] = new THREE.PerspectiveCamera(70,window.innerWidth/
+	window.innerHeight,1,1000);
 
 	camera[1].position.x = 0;
 	camera[1].position.y = 170;
@@ -265,8 +273,8 @@ function createCamera2() {
 }
 
 function createCamera3() {
-  	camera[3] = new THREE.PerspectiveCamera(70, window.innerWidth/
-	window.innerHeight, 1, 1000);
+  	camera[3] = new THREE.PerspectiveCamera(70,window.innerWidth/
+	window.innerHeight,1,1000);
 
   	camera[3].position.x = -100;
   	camera[3].position.y = 0;
@@ -274,10 +282,11 @@ function createCamera3() {
   	camera[3].lookAt(scene.position);
 }
 
+
 // ------ FUNCTIONS ------ //
 
 function onResize() {
-	renderer.setSize(window.innerWidth, window.innerHeight);
+	renderer.setSize(window.innerWidth,window.innerHeight);
 	if (window.innerHeight > 0 && window.innerWidth > 0) {
 	  renderer.getSize(WidthHeight);
 	  camera[1].aspect = WidthHeight.x / WidthHeight.y;
@@ -293,18 +302,18 @@ function createScene() {
 	scene = new THREE.Scene();
 	scene.add(new THREE.AxesHelper(10)); // DELETE LATER
 
-	robot = new Robot(0, 0, 0);
-	support = new Support (60, 4.5, 0);
-	target = new Target(60, 18.5, 0);
+	robot = new Robot(0,0,0);
+	support = new Support (60,4.5,0);
+	target = new Target(60,18.5,0);
 }
 
 function render() {
-	renderer.render(scene, camera[current_camera]);
+	renderer.render(scene,camera[current_camera]);
 }
 
 function init() {
 	renderer = new THREE.WebGLRenderer( {antialias: true} );
-	renderer.setSize(window.innerWidth, window.innerHeight);
+	renderer.setSize(window.innerWidth,window.innerHeight);
 	document.body.appendChild(renderer.domElement);
 
 	createScene();
@@ -314,7 +323,7 @@ function init() {
 
 	render();
 
-	window.addEventListener("resize", onResize);
+	window.addEventListener("resize",onResize);
 }
 
 function animate() {
