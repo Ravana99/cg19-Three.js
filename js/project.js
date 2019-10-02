@@ -8,13 +8,14 @@
 
 var camera = new Array(4).fill(null);
 var current_camera = 1;
-
 var scene, renderer, robot, target, support;
 var geometry, material, mesh;
-
 var WidthHeight= new THREE.Vector2(window.innerWidth,window.innerHeight);
+var aspect = window.innerWidth / window.innerHeight;
 
-var Speed = 0.5;
+
+var linearVelocity = 0.8;
+var angularVelociy = 0.05;
 
 var KeyboardState = {
   37: false, //left
@@ -30,54 +31,9 @@ var KeyboardState = {
   83: false, //S
   87: false //W
 };
-
-
 //INPUT
 onkeydown = onkeyup = function(e) {
-  	e = e || event; // to deal with IE
-	KeyboardState[e.keyCode] = e.type == 'keydown';
-	  
-  	if (KeyboardState[37]) { //left
-		robot.position.x-=Speed;
-  	}
-  	if (KeyboardState[38]) { //up
-		robot.position.z-=Speed;
-  	}
-  	if (KeyboardState[39]) { //right
-		robot.position.x+=Speed;
-  	}
-  	if (KeyboardState[40]) { //down
-		robot.position.z+=Speed;
-  	}
-  	if (KeyboardState[49]) { //1
-		current_camera=1;
-  	}
-  	if (KeyboardState[50]) { //2
-		current_camera=2;
-  	}
-  	if (KeyboardState[51]) { //3
-		current_camera=3;
-  	}
-  	if (KeyboardState[52]) { //4
-		scene.traverse(function (node) {
-	  	if (node instanceof THREE.Mesh){
-			node.material.wireframe= !node.material.wireframe;
-	  	}
-		});
-  	}
-  	if (KeyboardState[65]) { //A
-		robot.rotateArmY(0.04);
-  	}
-  	if (KeyboardState[83]) { //S
-		robot.rotateArmY(-0.04);
-  	}
-  	if (KeyboardState[81]) { //Q
-		if (robot.getArmRotationZ() < 1) robot.rotateArmZ(0.04);
-  	}
-  	if (KeyboardState[87]) { //W
-		if (robot.getArmRotationZ() > -0.75) robot.rotateArmZ(-0.04);
-  	}
-	render();
+	KeyboardState[e.keyCode] = (e.type == 'keydown');
 }
 
 
@@ -93,9 +49,9 @@ class Arm extends THREE.Object3D {
 		this.handLength = 5;
 		this.fingerHeight = 4;
 		this.fingerLength = 0.5;
-
+		
 		//Arm
-		addRectangularPrism(this,0,17,0,0xffffff,this.armLength,this.armHeight,this.armLength);
+		addRectangularPrism(this,0,20,0,0xffffff,this.armLength,this.armHeight,this.armLength);
 
 		//Forearm
 		addSphere(this,0,27,0,0xffff00,this.articulationRadius);
@@ -109,12 +65,6 @@ class Arm extends THREE.Object3D {
   	}
   	getRotationZ() {
 		return this.rotation.z;
-  	}
-  	rotateY(angle) {
-		this.rotation.y += angle;
-  	}
-  	rotateZ(angle) {
-		this.rotation.z += angle;
   	}
  }
 
@@ -141,26 +91,14 @@ class Platform extends THREE.Object3D {
 class Robot extends THREE.Object3D {
   	constructor(x,y,z) {
 		super();
-
 		this.platform = new Platform();
 		this.arm = new Arm();
-		this.add(this.platform);
+		this.attach(this.platform);
 		this.attach(this.arm);
-
-		this.position.x = x;
-		this.position.y = y;
-		this.position.z = z;
-
 		scene.add(this);
   	}
   	getArmRotationZ() {
 		return this.arm.getRotationZ();
-  	}
-  	rotateArmY(angle) {
-		this.arm.rotateY(angle);
-  	}
-  	rotateArmZ(angle) {
-		this.arm.rotateZ(angle);
   	}
 }
 
@@ -253,33 +191,28 @@ function addRectangularPrism(obj,x,y,z,color,dimX,dimY,dimZ) {
 // ------ CAMERAS ------ //
 
 function createCamera1() {
-	camera[1] = new THREE.PerspectiveCamera(70,window.innerWidth/
-	window.innerHeight,1,1000);
-
+	//camera[1] = new THREE.OrthographicCamera(-window.innerWidth, window.innerWidth, -window.innerHeight, window.innerHeight,1,1000 );
+	camera[1] = new THREE.OrthographicCamera(window.innerWidth / - 12, window.innerWidth / 12,window.innerHeight / 12, window.innerHeight / - 12, -200, 500 );
 	camera[1].position.x = 0;
-	camera[1].position.y = 170;
+	camera[1].position.y = 1;
 	camera[1].position.z = 0;
 	camera[1].lookAt(scene.position);
 }
 
 function createCamera2() {
-  	camera[2] = new THREE.PerspectiveCamera(70, window.innerWidth/
-	window.innerHeight, 1, 1000);
-
-  	camera[2].position.x = 0;
-  	camera[2].position.y = 0;
-  	camera[2].position.z = 205;
-  	camera[2].lookAt(scene.position);
+	camera[2] = new THREE.OrthographicCamera(window.innerWidth / - 16, window.innerWidth / 16,window.innerHeight / 16, window.innerHeight / - 16, -200, 500 );
+	camera[2].position.x = 0;
+	camera[2].position.y = 0;
+	camera[2].position.z = 0;
+	camera[2].lookAt(scene.position);
 }
 
 function createCamera3() {
-  	camera[3] = new THREE.PerspectiveCamera(70,window.innerWidth/
-	window.innerHeight,1,1000);
-
-  	camera[3].position.x = -100;
-  	camera[3].position.y = 0;
-  	camera[3].position.z = 0;
-  	camera[3].lookAt(scene.position);
+	camera[3] = new THREE.OrthographicCamera(window.innerWidth / - 8, window.innerWidth / 8,window.innerHeight / 8, window.innerHeight / - 8, -200, 500 );
+	camera[3].position.x = -1;
+	camera[3].position.y = 1;
+	camera[3].position.z = 0;
+	camera[3].lookAt(scene.position);
 }
 
 
@@ -315,18 +248,60 @@ function init() {
 	renderer = new THREE.WebGLRenderer( {antialias: true} );
 	renderer.setSize(window.innerWidth,window.innerHeight);
 	document.body.appendChild(renderer.domElement);
-
 	createScene();
 	createCamera1();
 	createCamera2();
 	createCamera3();
-
 	render();
-
 	window.addEventListener("resize",onResize);
 }
 
 function animate() {
 	requestAnimationFrame(animate);
 	render();
+	updateMovements();
+}
+
+function updateMovements(){
+
+	if (KeyboardState[37]) { //left
+		robot.rotateY(angularVelociy);
+  	}
+  	if (KeyboardState[38]) { //up
+		robot.translateX( linearVelocity );
+  	}
+  	if (KeyboardState[39]) { //right
+		robot.rotateY(-angularVelociy);
+  	}
+  	if (KeyboardState[40]) { //down
+		robot.translateX( -linearVelocity );
+  	}
+  	if (KeyboardState[49]) { //1
+		current_camera=1;
+  	}
+  	if (KeyboardState[50]) { //2
+		current_camera=2;
+  	}
+  	if (KeyboardState[51]) { //3
+		current_camera=3;
+  	}
+  	if (KeyboardState[52]) { //4
+		scene.traverse(function (node) {
+	  	if (node instanceof THREE.Mesh){
+			node.material.wireframe= !node.material.wireframe;
+	  	}
+		});
+  	}
+  	if (KeyboardState[65]) { //A
+		robot.arm.rotateY(angularVelociy);
+  	}
+  	if (KeyboardState[83]) { //S
+		robot.arm.rotateY(-angularVelociy);
+  	}
+  	if (KeyboardState[81]) { //Q
+		if (robot.getArmRotationZ() < 1) robot.arm.rotateZ(angularVelociy);
+  	}
+  	if (KeyboardState[87]) { //W
+		if (robot.getArmRotationZ() > -0.75) robot.arm.rotateZ(-angularVelociy);
+	  }
 }
