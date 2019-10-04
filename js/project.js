@@ -14,7 +14,7 @@ var WidthHeight = new THREE.Vector2(window.innerWidth, window.innerHeight);
 var aspect = window.innerWidth / window.innerHeight;
 
 var linearVelocity = 0.8;
-var angularVelociy = 0.05;
+var angularVelocity = 0.05;
 
 var KeyboardState = {
   37: false, //left
@@ -60,7 +60,7 @@ class Arm extends THREE.Object3D {
     addRectangularPrism(
       this,
       0,
-      10,
+      11,
       0,
       0x8e8e8c,
       this.armLength,
@@ -69,11 +69,11 @@ class Arm extends THREE.Object3D {
     );
 
     //Forearm
-    addSphere(this, 0, 20, 0, 0xe7f416, this.articulationRadius);
+    addSphere(this, 0, 21, 0, 0xe7f416, this.articulationRadius);
     addRectangularPrism(
       this,
       10,
-      20,
+      21,
       0,
       0x8e8e8c,
       this.armHeight,
@@ -82,11 +82,11 @@ class Arm extends THREE.Object3D {
     );
 
     //Hand
-    addSphere(this, 20, 20, 0, 0xe7f416, this.articulationRadius);
+    addSphere(this, 20, 21, 0, 0xe7f416, this.articulationRadius);
     addRectangularPrism(
       this,
       22.5,
-      20,
+      21,
       0,
       0x8e8e8c,
       this.handHeight,
@@ -96,7 +96,7 @@ class Arm extends THREE.Object3D {
     addRectangularPrism(
       this,
       25,
-      22,
+      23,
       0,
       0xe7f416,
       this.fingerHeight,
@@ -106,16 +106,25 @@ class Arm extends THREE.Object3D {
     addRectangularPrism(
       this,
       25,
-      18,
+      19,
       0,
       0xe7f416,
       this.fingerHeight,
       this.fingerLength,
       this.fingerLength
     );
+    this.position.x = 0;
+    this.position.y = 8;
+    this.position.z = 0;
   }
   getRotationZ() {
     return this.rotation.z;
+  }
+  rotateY(angle) {
+		this.rotation.y += angle;
+  }
+  rotateZ(angle) {
+		this.rotation.z += angle;
   }
 }
 
@@ -153,12 +162,21 @@ class Robot extends THREE.Object3D {
     super();
     this.platform = new Platform();
     this.arm = new Arm();
-    this.arm.translateY(8);
-    this.attach(this.platform);
+    this.add(this.platform);
     this.attach(this.arm);
+
+    this.position.x=x;
+		this.position.y=y;
+		this.position.z=z;
   }
   getArmRotationZ() {
     return this.arm.getRotationZ();
+  }
+  rotateArmY(angle) {
+		this.arm.rotateY(angle);
+  }
+  	rotateArmZ(angle) {
+		this.arm.rotateZ(angle);
   }
 }
 
@@ -190,7 +208,6 @@ class Support extends THREE.Object3D {
       this.supportRadius,
       this.supportHeight
     );
-    this.translateY(10.5);
     this.position.x = x;
     this.position.y = y;
     this.position.z = z;
@@ -315,16 +332,6 @@ function createCamera3() {
 // ------ FUNCTIONS ------ //
 
 function onResize() {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  if (window.innerHeight > 0 && window.innerWidth > 0) {
-    renderer.getSize(WidthHeight);
-    camera[1].aspect = WidthHeight.x / WidthHeight.y;
-    camera[2].aspect = WidthHeight.x / WidthHeight.y;
-    camera[3].aspect = WidthHeight.x / WidthHeight.y;
-    camera[1].updateProjectionMatrix();
-    camera[2].updateProjectionMatrix();
-    camera[3].updateProjectionMatrix();
-  }
 }
 
 function createScene() {
@@ -350,7 +357,7 @@ function init() {
   createCamera1();
   createCamera2();
   createCamera3();
-  window.addEventListener("resize", onResize);
+  //window.addEventListener("resize", onResize);
 }
 
 function animate() {
@@ -390,18 +397,18 @@ function update() {
   }
   if (KeyboardState[65]) {
     //A
-    robot.arm.rotateY(angularVelociy);
+    robot.rotateArmY(angularVelocity);
   }
   if (KeyboardState[83]) {
     //S
-    robot.arm.rotateY(-angularVelociy);
+    robot.rotateArmY(-angularVelocity);
   }
   if (KeyboardState[81]) {
     //Q
-    if (robot.getArmRotationZ() < 1) robot.arm.rotateZ(angularVelociy);
+    if (robot.getArmRotationZ() < 1) robot.rotateArmZ(angularVelocity);
   }
   if (KeyboardState[87]) {
     //W
-    if (robot.getArmRotationZ() > -1) robot.arm.rotateZ(-angularVelociy);
+    if (robot.getArmRotationZ() > -0.80) robot.rotateArmZ(-angularVelocity);
   }
 }
