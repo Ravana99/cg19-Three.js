@@ -30,6 +30,7 @@ var KeyboardState = {
   83: false, //S
   87: false //W
 };
+
 //INPUT
 onkeydown = onkeyup = function(e) {
   KeyboardState[e.keyCode] = e.type == "keydown";
@@ -37,7 +38,14 @@ onkeydown = onkeyup = function(e) {
     //4
     scene.traverse(function(node) {
       if (node instanceof THREE.Mesh) {
-        node.material.wireframe = !node.material.wireframe;
+        if (node.parent.name === "Platform")
+          node.material.wireframe = !node.material.wireframe;
+        else if (node.parent.name === "Arm")
+          node.material.wireframe = !node.material.wireframe;
+        else if (node.parent.name === "Support")
+          node.material.wireframe = !node.material.wireframe;
+        else if (node.parent.name === "Target")
+          node.material.wireframe = !node.material.wireframe;
       }
     });
   }
@@ -48,6 +56,7 @@ onkeydown = onkeyup = function(e) {
 class Arm extends THREE.Object3D {
   constructor() {
     super();
+    this.name = "Arm";
     this.armLength = 2;
     this.armHeight = 20;
     this.articulationRadius = 2;
@@ -60,7 +69,7 @@ class Arm extends THREE.Object3D {
     addRectangularPrism(
       this,
       0,
-      11,
+      this.armHeight / 2,
       0,
       0x8e8e8c,
       this.armLength,
@@ -69,11 +78,18 @@ class Arm extends THREE.Object3D {
     );
 
     //Forearm
-    addSphere(this, 0, 21, 0, 0xe7f416, this.articulationRadius);
+    addSphere(
+      this,
+      0,
+      this.armHeight + 1,
+      0,
+      0xe7f416,
+      this.articulationRadius
+    );
     addRectangularPrism(
       this,
-      10,
-      21,
+      this.armHeight / 2,
+      this.armHeight + 1,
       0,
       0x8e8e8c,
       this.armHeight,
@@ -82,11 +98,18 @@ class Arm extends THREE.Object3D {
     );
 
     //Hand
-    addSphere(this, 20, 21, 0, 0xe7f416, this.articulationRadius);
+    addSphere(
+      this,
+      this.armHeight,
+      this.armHeight + 1,
+      0,
+      0xe7f416,
+      this.articulationRadius
+    );
     addRectangularPrism(
       this,
-      22.5,
-      21,
+      this.armHeight + 2.5,
+      this.armHeight + 1,
       0,
       0x8e8e8c,
       this.handHeight,
@@ -95,8 +118,8 @@ class Arm extends THREE.Object3D {
     );
     addRectangularPrism(
       this,
-      25,
-      23,
+      this.armHeight + 5,
+      this.armHeight + 3,
       0,
       0xe7f416,
       this.fingerHeight,
@@ -105,8 +128,8 @@ class Arm extends THREE.Object3D {
     );
     addRectangularPrism(
       this,
-      25,
-      19,
+      this.armHeight + 5,
+      this.armHeight - 1,
       0,
       0xe7f416,
       this.fingerHeight,
@@ -121,16 +144,17 @@ class Arm extends THREE.Object3D {
     return this.rotation.z;
   }
   rotateY(angle) {
-		this.rotation.y += angle;
+    this.rotation.y += angle;
   }
   rotateZ(angle) {
-		this.rotation.z += angle;
+    this.rotation.z += angle;
   }
 }
 
 class Platform extends THREE.Object3D {
   constructor() {
     super();
+    this.name = "Platform";
     this.boardLength = 30;
     this.boardHeight = 3;
     this.wheelRadius = 2;
@@ -140,7 +164,7 @@ class Platform extends THREE.Object3D {
     addRectangularPrism(
       this,
       0,
-      5.5,
+      this.boardHeight + this.wheelRadius + 0.5,
       0,
       0x626262,
       this.boardLength,
@@ -150,39 +174,41 @@ class Platform extends THREE.Object3D {
     addSemiSphere(this, 0, 7, 0, 0xefdb16, this.semisphereRadius);
 
     //Wheels
-    addSphere(this, 12, 2, 12, 0xffffff, this.wheelRadius);
-    addSphere(this, 12, 2, -12, 0xffffff, this.wheelRadius);
-    addSphere(this, -12, 2, 12, 0xffffff, this.wheelRadius);
-    addSphere(this, -12, 2, -12, 0xffffff, this.wheelRadius);
+    addSphere(this, 12, this.wheelRadius, 12, 0xffffff, this.wheelRadius);
+    addSphere(this, 12, this.wheelRadius, -12, 0xffffff, this.wheelRadius);
+    addSphere(this, -12, this.wheelRadius, 12, 0xffffff, this.wheelRadius);
+    addSphere(this, -12, this.wheelRadius, -12, 0xffffff, this.wheelRadius);
   }
 }
 
 class Robot extends THREE.Object3D {
   constructor(x, y, z) {
     super();
+    this.name = "Robot";
     this.platform = new Platform();
     this.arm = new Arm();
-    this.add(this.platform);
+    this.attach(this.platform);
     this.attach(this.arm);
 
-    this.position.x=x;
-		this.position.y=y;
-		this.position.z=z;
+    this.position.x = x;
+    this.position.y = y;
+    this.position.z = z;
   }
   getArmRotationZ() {
     return this.arm.getRotationZ();
   }
   rotateArmY(angle) {
-		this.arm.rotateY(angle);
+    this.arm.rotateY(angle);
   }
-  	rotateArmZ(angle) {
-		this.arm.rotateZ(angle);
+  rotateArmZ(angle) {
+    this.arm.rotateZ(angle);
   }
 }
 
 class Target extends THREE.Object3D {
   constructor(x, y, z) {
     super();
+    this.name = "Target";
     this.innerRadius = 2;
     this.tubeRadius = 1;
 
@@ -197,6 +223,7 @@ class Target extends THREE.Object3D {
 class Support extends THREE.Object3D {
   constructor(x, y, z) {
     super();
+    this.name = "Support";
     this.supportRadius = 4;
     this.supportHeight = 20;
     addCylinder(
@@ -284,7 +311,6 @@ function addRectangularPrism(obj, x, y, z, color, dimX, dimY, dimZ) {
 // ------ CAMERAS ------ //
 
 function createCamera1() {
-  //camera[1] = new THREE.OrthographicCamera(-window.innerWidth, window.innerWidth, -window.innerHeight, window.innerHeight,1,1000 );
   camera[1] = new THREE.OrthographicCamera(
     window.innerWidth / -12,
     window.innerWidth / 12,
@@ -331,8 +357,7 @@ function createCamera3() {
 
 // ------ FUNCTIONS ------ //
 
-function onResize() {
-}
+function onResize() {}
 
 function createScene() {
   scene = new THREE.Scene();
@@ -342,7 +367,6 @@ function createScene() {
   scene.add(robot);
   scene.add(support);
   scene.add(target);
-  scene.add(new THREE.AxesHelper(10)); // DELETE LATER
 }
 
 function render() {
@@ -409,6 +433,6 @@ function update() {
   }
   if (KeyboardState[87]) {
     //W
-    if (robot.getArmRotationZ() > -0.80) robot.rotateArmZ(-angularVelocity);
+    if (robot.getArmRotationZ() > -0.8) robot.rotateArmZ(-angularVelocity);
   }
 }
