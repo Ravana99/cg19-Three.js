@@ -10,8 +10,9 @@ var camera = new Array(4).fill(null);
 var current_camera = 1;
 var scene, renderer, robot, target, support;
 var geometry, material, mesh;
-var WidthHeight = new THREE.Vector2(window.innerWidth, window.innerHeight);
-var aspect = window.innerWidth / window.innerHeight;
+
+var aspectRatio = window.innerHeight / window.innerWidth;
+var frustumSize = 250;
 
 var linearVelocity = 0.8;
 var angularVelocity = 0.05;
@@ -212,7 +213,7 @@ class Target extends THREE.Object3D {
     this.innerRadius = 2;
     this.tubeRadius = 1;
 
-    addTorus(this, 0, 5.5, 0, 0x26e700, this.innerRadius, this.tubeRadius);
+    addTorus(this, 0, 0, 0, 0x26e700, this.innerRadius, this.tubeRadius);
 
     this.position.x = x;
     this.position.y = y;
@@ -225,11 +226,11 @@ class Support extends THREE.Object3D {
     super();
     this.name = "Support";
     this.supportRadius = 4;
-    this.supportHeight = 20;
+    this.supportHeight = 22;
     addCylinder(
       this,
       0,
-      5.5,
+      11,
       0,
       0xffffff,
       this.supportRadius,
@@ -312,12 +313,12 @@ function addRectangularPrism(obj, x, y, z, color, dimX, dimY, dimZ) {
 
 function createCamera1() {
   camera[1] = new THREE.OrthographicCamera(
-    window.innerWidth / -12,
-    window.innerWidth / 12,
-    window.innerHeight / 12,
-    window.innerHeight / -12,
-    -200,
-    500
+    frustumSize / -2,
+    frustumSize / 2,
+    (frustumSize * aspectRatio) / 2,
+    (frustumSize * aspectRatio) / -2,
+    -100,
+    100
   );
   camera[1].position.x = 0;
   camera[1].position.y = 1;
@@ -327,12 +328,12 @@ function createCamera1() {
 
 function createCamera2() {
   camera[2] = new THREE.OrthographicCamera(
-    window.innerWidth / -16,
-    window.innerWidth / 16,
-    window.innerHeight / 16,
-    window.innerHeight / -16,
-    -200,
-    500
+    frustumSize / -2,
+    frustumSize / 2,
+    (frustumSize * aspectRatio) / 2,
+    (frustumSize * aspectRatio) / -2,
+    -100,
+    100
   );
   camera[2].position.x = 0;
   camera[2].position.y = 0;
@@ -342,12 +343,12 @@ function createCamera2() {
 
 function createCamera3() {
   camera[3] = new THREE.OrthographicCamera(
-    window.innerWidth / -8,
-    window.innerWidth / 8,
-    window.innerHeight / 8,
-    window.innerHeight / -8,
-    -200,
-    500
+    frustumSize / -2,
+    frustumSize / 2,
+    (frustumSize * aspectRatio) / 2,
+    (frustumSize * aspectRatio) / -2,
+    -100,
+    100
   );
   camera[3].position.x = 1;
   camera[3].position.y = 0;
@@ -357,13 +358,37 @@ function createCamera3() {
 
 // ------ FUNCTIONS ------ //
 
-function onResize() {}
+function onResize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  aspectRatio = window.innerHeight / window.innerWidth;
+
+  if (window.innerHeight > 0 && window.innerWidth > 0) {
+    camera[1].left = frustumSize / -2;
+    camera[1].right = frustumSize / 2;
+    camera[1].top = (frustumSize * aspectRatio) / 2;
+    camera[1].bottom = (-frustumSize * aspectRatio) / 2;
+    camera[1].updateProjectionMatrix();
+
+    camera[2].left = frustumSize / -2;
+    camera[2].right = frustumSize / 2;
+    camera[2].top = (frustumSize * aspectRatio) / 2;
+    camera[2].bottom = (-frustumSize * aspectRatio) / 2;
+    camera[2].updateProjectionMatrix();
+
+    camera[3].left = frustumSize / -2;
+    camera[3].right = frustumSize / 2;
+    camera[3].top = (frustumSize * aspectRatio) / 2;
+    camera[3].bottom = (-frustumSize * aspectRatio) / 2;
+    camera[3].updateProjectionMatrix();
+  }
+  render();
+}
 
 function createScene() {
   scene = new THREE.Scene();
-  robot = new Robot(0, 0, 0);
-  support = new Support(60, 4.5, 0);
-  target = new Target(60, 18.5, 0);
+  robot = new Robot(-60, 0, 0);
+  support = new Support(60, 0, 0);
+  target = new Target(60, 26, 0);
   scene.add(robot);
   scene.add(support);
   scene.add(target);
@@ -381,7 +406,7 @@ function init() {
   createCamera1();
   createCamera2();
   createCamera3();
-  //window.addEventListener("resize", onResize);
+  window.addEventListener("resize", onResize);
 }
 
 function animate() {
