@@ -14,8 +14,8 @@ var geometry, material, mesh;
 var aspectRatio = window.innerHeight / window.innerWidth;
 var frustumSize = 250;
 
-var linearVelocity = 0.8;
-var angularVelocity = 0.05;
+var linearVelocity = 0.3;
+var angularVelocity = 0.02;
 
 var KeyboardState = {
   37: false, //left
@@ -418,19 +418,19 @@ function animate() {
 function update() {
   if (KeyboardState[37]) {
     //left
-    robot.translateZ(-linearVelocity);
+    robot.translateOnAxis(new THREE.Vector3(0, 0, -1), linearVelocity);
   }
   if (KeyboardState[38]) {
     //up
-    robot.translateX(linearVelocity);
+    robot.translateOnAxis(new THREE.Vector3(1, 0, 0), linearVelocity);
   }
   if (KeyboardState[39]) {
     //right
-    robot.translateZ(linearVelocity);
+    robot.translateOnAxis(new THREE.Vector3(0, 0, 1), linearVelocity);
   }
   if (KeyboardState[40]) {
     //down
-    robot.translateX(-linearVelocity);
+    robot.translateOnAxis(new THREE.Vector3(-1, 0, 0), linearVelocity);
   }
   if (KeyboardState[49]) {
     //1
