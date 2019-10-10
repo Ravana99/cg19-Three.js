@@ -37,18 +37,9 @@ onkeydown = onkeyup = function(e) {
   KeyboardState[e.keyCode] = e.type == "keydown";
   if (KeyboardState[52]) {
     //4
-    scene.traverse(function(node) {
-      if (node instanceof THREE.Mesh) {
-        if (node.parent.name === "Platform")
-          node.material.wireframe = !node.material.wireframe;
-        else if (node.parent.name === "Arm")
-          node.material.wireframe = !node.material.wireframe;
-        else if (node.parent.name === "Support")
-          node.material.wireframe = !node.material.wireframe;
-        else if (node.parent.name === "Target")
-          node.material.wireframe = !node.material.wireframe;
-      }
-    });
+    robot.changeWireFrame();
+    target.changeWireFrame();
+    support.changeWireFrame();
   }
 };
 
@@ -65,7 +56,12 @@ class Arm extends THREE.Object3D {
     this.handLength = 5;
     this.fingerHeight = 4;
     this.fingerLength = 0.5;
-
+    this.jointsAndFingersMaterial = new THREE.MeshBasicMaterial({
+      wireframe: true
+    });
+    this.material = new THREE.MeshBasicMaterial({
+      wireframe: true
+    });
     //Arm
     addRectangularPrism(
       this,
@@ -75,7 +71,8 @@ class Arm extends THREE.Object3D {
       0x8e8e8c,
       this.armLength,
       this.armHeight,
-      this.armLength
+      this.armLength,
+      this.material
     );
 
     //Forearm
@@ -85,7 +82,8 @@ class Arm extends THREE.Object3D {
       this.armHeight + 1,
       0,
       0xe7f416,
-      this.articulationRadius
+      this.articulationRadius,
+      this.jointsAndFingersMaterial
     );
     addRectangularPrism(
       this,
@@ -95,7 +93,8 @@ class Arm extends THREE.Object3D {
       0x8e8e8c,
       this.armHeight,
       this.armLength,
-      this.armLength
+      this.armLength,
+      this.material
     );
 
     //Hand
@@ -105,7 +104,8 @@ class Arm extends THREE.Object3D {
       this.armHeight + 1,
       0,
       0xe7f416,
-      this.articulationRadius
+      this.articulationRadius,
+      this.jointsAndFingersMaterial
     );
     addRectangularPrism(
       this,
@@ -115,7 +115,8 @@ class Arm extends THREE.Object3D {
       0x8e8e8c,
       this.handHeight,
       this.handLength,
-      this.handLength
+      this.handLength,
+      this.material
     );
     addRectangularPrism(
       this,
@@ -125,7 +126,8 @@ class Arm extends THREE.Object3D {
       0xe7f416,
       this.fingerHeight,
       this.fingerLength,
-      this.fingerLength
+      this.fingerLength,
+      this.jointsAndFingersMaterial
     );
     addRectangularPrism(
       this,
@@ -135,7 +137,8 @@ class Arm extends THREE.Object3D {
       0xe7f416,
       this.fingerHeight,
       this.fingerLength,
-      this.fingerLength
+      this.fingerLength,
+      this.jointsAndFingersMaterial
     );
     this.position.x = 0;
     this.position.y = 8;
@@ -150,6 +153,11 @@ class Arm extends THREE.Object3D {
   rotateZ(angle) {
     this.rotation.z += angle;
   }
+  changeWireFrame() {
+    this.jointsAndFingersMaterial.wireframe = !this.jointsAndFingersMaterial
+      .wireframe;
+    this.material.wireframe = !this.material.wireframe;
+  }
 }
 
 class Platform extends THREE.Object3D {
@@ -160,7 +168,15 @@ class Platform extends THREE.Object3D {
     this.boardHeight = 3;
     this.wheelRadius = 2;
     this.semisphereRadius = 4;
-
+    this.boardMaterial = new THREE.MeshBasicMaterial({
+      wireframe: true
+    });
+    this.semiSphereMaterial = new THREE.MeshBasicMaterial({
+      wireframe: true
+    });
+    this.wheelsMaterial = new THREE.MeshBasicMaterial({
+      wireframe: true
+    });
     //Base
     addRectangularPrism(
       this,
@@ -170,15 +186,61 @@ class Platform extends THREE.Object3D {
       0x626262,
       this.boardLength,
       this.boardHeight,
-      this.boardLength
+      this.boardLength,
+      this.boardMaterial
     );
-    addSemiSphere(this, 0, 7, 0, 0xefdb16, this.semisphereRadius);
+    addSemiSphere(
+      this,
+      0,
+      7,
+      0,
+      0xefdb16,
+      this.semisphereRadius,
+      this.semiSphereMaterial
+    );
 
     //Wheels
-    addSphere(this, 12, this.wheelRadius, 12, 0xffffff, this.wheelRadius);
-    addSphere(this, 12, this.wheelRadius, -12, 0xffffff, this.wheelRadius);
-    addSphere(this, -12, this.wheelRadius, 12, 0xffffff, this.wheelRadius);
-    addSphere(this, -12, this.wheelRadius, -12, 0xffffff, this.wheelRadius);
+    addSphere(
+      this,
+      12,
+      this.wheelRadius,
+      12,
+      0xffffff,
+      this.wheelRadius,
+      this.wheelsMaterial
+    );
+    addSphere(
+      this,
+      12,
+      this.wheelRadius,
+      -12,
+      0xffffff,
+      this.wheelRadius,
+      this.wheelsMaterial
+    );
+    addSphere(
+      this,
+      -12,
+      this.wheelRadius,
+      12,
+      0xffffff,
+      this.wheelRadius,
+      this.wheelsMaterial
+    );
+    addSphere(
+      this,
+      -12,
+      this.wheelRadius,
+      -12,
+      0xffffff,
+      this.wheelRadius,
+      this.wheelsMaterial
+    );
+  }
+  changeWireFrame() {
+    this.boardMaterial.wireframe = !this.boardMaterial.wireframe;
+    this.semiSphereMaterial.wireframe = !this.semiSphereMaterial.wireframe;
+    this.wheelsMaterial.wireframe = !this.wheelsMaterial.wireframe;
   }
 }
 
@@ -190,7 +252,7 @@ class Robot extends THREE.Object3D {
     this.arm = new Arm();
     this.attach(this.platform);
     this.attach(this.arm);
-
+    this.material = 0;
     this.position.x = x;
     this.position.y = y;
     this.position.z = z;
@@ -204,6 +266,10 @@ class Robot extends THREE.Object3D {
   rotateArmZ(angle) {
     this.arm.rotateZ(angle);
   }
+  changeWireFrame() {
+    this.arm.changeWireFrame();
+    this.platform.changeWireFrame();
+  }
 }
 
 class Target extends THREE.Object3D {
@@ -212,12 +278,28 @@ class Target extends THREE.Object3D {
     this.name = "Target";
     this.innerRadius = 2;
     this.tubeRadius = 1;
-
-    addTorus(this, 0, 0, 0, 0x26e700, this.innerRadius, this.tubeRadius);
+    this.material = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      wireframe: true
+    });
+    addTorus(
+      this,
+      0,
+      0,
+      0,
+      0x26e700,
+      this.innerRadius,
+      this.tubeRadius,
+      this.material
+    );
 
     this.position.x = x;
     this.position.y = y;
     this.position.z = z;
+  }
+
+  changeWireFrame() {
+    this.material.wireframe = !this.material.wireframe;
   }
 }
 
@@ -227,6 +309,10 @@ class Support extends THREE.Object3D {
     this.name = "Support";
     this.supportRadius = 4;
     this.supportHeight = 22;
+    this.material = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      wireframe: true
+    });
     addCylinder(
       this,
       0,
@@ -234,41 +320,38 @@ class Support extends THREE.Object3D {
       0,
       0xffffff,
       this.supportRadius,
-      this.supportHeight
+      this.supportHeight,
+      this.material
     );
     this.position.x = x;
     this.position.y = y;
     this.position.z = z;
   }
+  changeWireFrame() {
+    this.material.wireframe = !this.material.wireframe;
+  }
 }
 
 // ------ GEOMETRIES ------ //
 
-function addCylinder(obj, x, y, z, color, radius, height) {
+function addCylinder(obj, x, y, z, color, radius, height, material) {
   geometry = new THREE.CylinderGeometry(radius, radius, height, 15);
-  material = new THREE.MeshBasicMaterial({
-    color: color,
-    wireframe: true
-  });
-
+  material.color.setHex(color);
   mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   obj.add(mesh);
 }
 
-function addTorus(obj, x, y, z, color, radius, tube) {
+function addTorus(obj, x, y, z, color, radius, tube, material) {
   geometry = new THREE.TorusGeometry(radius + tube, tube, 20, 20);
-  material = new THREE.MeshBasicMaterial({
-    color: color,
-    wireframe: true
-  });
+  material.color.setHex(color);
   mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   mesh.rotateY(Math.PI / 2);
   obj.add(mesh);
 }
 
-function addSemiSphere(obj, x, y, z, color, radius) {
+function addSemiSphere(obj, x, y, z, color, radius, material) {
   geometry = new THREE.SphereGeometry(
     radius,
     20,
@@ -278,32 +361,23 @@ function addSemiSphere(obj, x, y, z, color, radius) {
     0,
     Math.PI / 2
   );
-  material = new THREE.MeshBasicMaterial({
-    color: color,
-    wireframe: true
-  });
+  material.color.setHex(color);
   mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   obj.add(mesh);
 }
 
-function addSphere(obj, x, y, z, color, radius) {
+function addSphere(obj, x, y, z, color, radius, material) {
   geometry = new THREE.SphereGeometry(radius, 20, 20);
-  material = new THREE.MeshBasicMaterial({
-    color: color,
-    wireframe: true
-  });
+  material.color.setHex(color);
   mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   obj.add(mesh);
 }
 
-function addRectangularPrism(obj, x, y, z, color, dimX, dimY, dimZ) {
+function addRectangularPrism(obj, x, y, z, color, dimX, dimY, dimZ, material) {
   geometry = new THREE.BoxGeometry(dimX, dimY, dimZ);
-  material = new THREE.MeshBasicMaterial({
-    color: color,
-    wireframe: true
-  });
+  material.color.setHex(color);
   mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   obj.add(mesh);
