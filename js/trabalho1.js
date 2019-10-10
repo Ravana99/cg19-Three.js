@@ -455,7 +455,6 @@ function onResize() {
     camera[3].bottom = (-frustumSize * aspectRatio) / 2;
     camera[3].updateProjectionMatrix();
   }
-  render();
 }
 
 function createScene() {
