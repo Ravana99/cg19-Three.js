@@ -445,6 +445,7 @@ function update() {
   if (KeyboardState[51]) {
     //3
     current_camera = 3;
+    qwe;
   }
   if (KeyboardState[65]) {
     //A
