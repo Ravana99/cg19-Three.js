@@ -14,8 +14,9 @@ var geometry, material, mesh;
 var aspectRatio = window.innerHeight / window.innerWidth;
 var frustumSize = 250;
 
-var linearVelocity = 0.8;
-var angularVelocity = 0.05;
+var currentTime, previousTime, timeInterval;
+var linearVelocity = 0.05;
+var angularVelocity = 0.0025;
 
 var KeyboardState = {
   37: false, //left
@@ -65,7 +66,6 @@ class Arm extends THREE.Object3D {
     this.handLength = 5;
     this.fingerHeight = 4;
     this.fingerLength = 0.5;
-
     //Arm
     addRectangularPrism(
       this,
@@ -144,10 +144,10 @@ class Arm extends THREE.Object3D {
   getRotationZ() {
     return this.rotation.z;
   }
-  rotateY(angle) {
+  rotateeY(angle) {
     this.rotation.y += angle;
   }
-  rotateZ(angle) {
+  rotateeZ(angle) {
     this.rotation.z += angle;
   }
 }
@@ -190,7 +190,6 @@ class Robot extends THREE.Object3D {
     this.arm = new Arm();
     this.attach(this.platform);
     this.attach(this.arm);
-
     this.position.x = x;
     this.position.y = y;
     this.position.z = z;
@@ -199,10 +198,10 @@ class Robot extends THREE.Object3D {
     return this.arm.getRotationZ();
   }
   rotateArmY(angle) {
-    this.arm.rotateY(angle);
+    this.arm.rotateeY(angle);
   }
   rotateArmZ(angle) {
-    this.arm.rotateZ(angle);
+    this.arm.rotateeZ(angle);
   }
 }
 
@@ -232,7 +231,7 @@ class Support extends THREE.Object3D {
       0,
       11,
       0,
-      0xffffff,
+      0xf0f067,
       this.supportRadius,
       this.supportHeight
     );
@@ -416,21 +415,24 @@ function animate() {
 }
 
 function update() {
+  currentTime = new Date().getTime();
+  timeInterval = currentTime - previousTime;
+  previousTime = currentTime;
   if (KeyboardState[37]) {
     //left
-    robot.translateZ(-linearVelocity);
+    robot.translateZ(-timeInterval * linearVelocity);
   }
   if (KeyboardState[38]) {
     //up
-    robot.translateX(linearVelocity);
+    robot.translateX(timeInterval * linearVelocity);
   }
   if (KeyboardState[39]) {
     //right
-    robot.translateZ(linearVelocity);
+    robot.translateZ(timeInterval * linearVelocity);
   }
   if (KeyboardState[40]) {
     //down
-    robot.translateX(-linearVelocity);
+    robot.translateX(-timeInterval * linearVelocity);
   }
   if (KeyboardState[49]) {
     //1
@@ -446,18 +448,20 @@ function update() {
   }
   if (KeyboardState[65]) {
     //A
-    robot.rotateArmY(angularVelocity);
+    robot.rotateArmY(timeInterval * angularVelocity);
   }
   if (KeyboardState[83]) {
     //S
-    robot.rotateArmY(-angularVelocity);
+    robot.rotateArmY(-timeInterval * angularVelocity);
   }
   if (KeyboardState[81]) {
     //Q
-    if (robot.getArmRotationZ() < 1) robot.rotateArmZ(angularVelocity);
+    if (robot.getArmRotationZ() < 1)
+      robot.rotateArmZ(timeInterval * angularVelocity);
   }
   if (KeyboardState[87]) {
     //W
-    if (robot.getArmRotationZ() > -0.8) robot.rotateArmZ(-angularVelocity);
+    if (robot.getArmRotationZ() > -0.8)
+      robot.rotateArmZ(-timeInterval * angularVelocity);
   }
 }
