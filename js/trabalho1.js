@@ -420,7 +420,7 @@ function update() {
   previousTime = currentTime;
   if (KeyboardState[37]) {
     //left
-    robot.translateZ(-timeInterval * linearVelocity);
+    robot.translateZ(timeInterval * -linearVelocity);
   }
   if (KeyboardState[38]) {
     //up
@@ -432,7 +432,7 @@ function update() {
   }
   if (KeyboardState[40]) {
     //down
-    robot.translateX(-timeInterval * linearVelocity);
+    robot.translateX(timeInterval * -linearVelocity);
   }
   if (KeyboardState[49]) {
     //1
@@ -452,7 +452,7 @@ function update() {
   }
   if (KeyboardState[83]) {
     //S
-    robot.rotateArmY(-timeInterval * angularVelocity);
+    robot.rotateArmY(timeInterval * -angularVelocity);
   }
   if (KeyboardState[81]) {
     //Q
@@ -462,6 +462,6 @@ function update() {
   if (KeyboardState[87]) {
     //W
     if (robot.getArmRotationZ() > -0.8)
-      robot.rotateArmZ(-timeInterval * angularVelocity);
+      robot.rotateArmZ(timeInterval * -angularVelocity);
   }
 }
