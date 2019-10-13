@@ -18,7 +18,6 @@ var scene, renderer, leftWall, middleWall, rightWall
 var geometry, material, mesh;
 var aspectRatio = window.innerHeight / window.innerWidth;
 var frustumSize = 250;
-var ballAxes = new THREE.AxesHelper(20)
 var currentTime, previousTime, timeInterval;
 var linearVelocity = 0.1;
 var angularVelocity = 0.0025;
@@ -47,16 +46,8 @@ onkeydown = onkeyup = function (e) {
         cannon[current_cannon].fire()
     }
     if (KeyboardState[82]) {
-        //R
-        for (let i = 0; i < numberOfBalls; i++) {
-            balls[i].toggleAxes()
-        }
-        /*balls.map((ball) => {
-            console.log(ball)
-            return (
-               
-
-        })*/
+        balls.map((ball) =>
+            ball.toggleAxes())
     }
 };
 
@@ -102,8 +93,10 @@ class Ball extends THREE.Object3D {
         this.position.z = z;
         this.rotation.y = direction;
         this.move = move
-        this.axes = false;
         this.time = 20
+
+        this.axes = new THREE.AxesHelper(20);
+        this.displayAxes = false;
         addSphere(
             this,
             this.radius,
@@ -117,8 +110,8 @@ class Ball extends THREE.Object3D {
 
     }
     toggleAxes() {
-        this.axes = !this.axes;
-        this.axes ? this.add(ballAxes) : this.remove(ballAxes)
+        this.displayAxes = !this.displayAxes;
+        this.displayAxes ? this.add(this.axes) : this.remove(this.axes)
     }
 }
 
