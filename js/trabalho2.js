@@ -130,10 +130,12 @@ class Cannon extends THREE.Object3D {
         this.position.y = y;
         this.position.z = z;
         this.rotation.y = angle;
+        this.rotateZ(Math.PI / 2)
+        this.add(new THREE.AxesHelper(20));
         addCylinder(this, this.radius, this.length, this.material)
 
     }
-    getRotationY() {
+    getRotationX() {
         return this.rotation.y;
     }
     fire() {
@@ -143,6 +145,7 @@ class Cannon extends THREE.Object3D {
             this.position.z,
             this.rotation.y,
             true)
+        ball.add(camera[2])
         scene.add(ball)
         balls.push(ball)
     }
@@ -152,8 +155,6 @@ class Cannon extends THREE.Object3D {
 function addCylinder(obj, radius, height, material) {
     geometry = new THREE.CylinderGeometry(radius, radius, height, 15);
     mesh = new THREE.Mesh(geometry, material);
-    mesh.rotateZ(Math.PI / 2);
-
     obj.add(mesh);
 }
 
@@ -201,10 +202,10 @@ function createCamera3() {
     //TODO
     camera[2] = new THREE.PerspectiveCamera(100,
         window.innerWidth / window.innerHeight, 1, 1000);
-    camera[2].position.x = 50;
-    camera[2].position.y = 70;
-    camera[2].position.z = 25;
-    camera[2].lookAt(scene.position);
+    camera[2].position.x = cannon[current_cannon].position.x + 20;
+    camera[2].position.y = cannon[current_cannon].position.y + 10;
+    camera[2].position.z = cannon[current_cannon].position.z;
+    camera[2].lookAt(cannon[current_cannon].position);
 }
 
 // ------ FUNCTIONS ------ //
@@ -283,15 +284,25 @@ function animate() {
     render();
 }
 
+function cameraUpdate(ball) {
+    var offset = new THREE.Vector3(ball.position.x + 20, ball.position.y + 10, ball.position.z);
+    camera[2].rotation.y = ball.rotation.y
+    camera[2].position.lerp(offset, 1);
+    camera[2].lookAt(ball.position.x, ball.position.y, ball.position.z);
+}
+
 function update() {
+    createCamera3();
     currentTime = new Date().getTime();
     timeInterval = currentTime - previousTime;
     previousTime = currentTime;
 
     balls.forEach(ball => {
-        if (ball.move)
+        if (ball.move) {
+            cameraUpdate(ball);
             ball.translateX(-linearVelocity * ball.time +
                 (aceleration * Math.pow(ball.time, 2)) / 2);
+        }
         if (ball.time > 0)
             ball.time -= 0.1
         else {
@@ -303,12 +314,12 @@ function update() {
 
     //}
     if (KeyboardState[37]) {
-        if (cannon[current_cannon].getRotationY() < 0.8)
-            cannon[current_cannon].rotateY(timeInterval * angularVelocity)
+        if (cannon[current_cannon].getRotationX() < 0.8)
+            cannon[current_cannon].rotateX(timeInterval * angularVelocity)
     }
     if (KeyboardState[39]) {
-        if (cannon[current_cannon].getRotationY() > -0.8)
-            cannon[current_cannon].rotateY(timeInterval * -angularVelocity)
+        if (cannon[current_cannon].getRotationX() > -0.8)
+            cannon[current_cannon].rotateX(timeInterval * -angularVelocity)
     }
     if (KeyboardState[49]) {
         //1
