@@ -9,20 +9,25 @@
 // The first entry of the camera array (index 0) is ignored to make the code more intuitive
 // (for example, camera[1] is the first camera that you switch to by pressing 1, etc.)
 
+var numberOfBalls = 8//prompt("How many balls do you want");
+
 var camera = new Array(3).fill(null);
 var cannon = new Array(3).fill(null);
 var current_camera = 0, current_cannon = 1;
 var scene, renderer, leftWall, middleWall, rightWall
 var geometry, material, mesh;
-var ball1;
 var aspectRatio = window.innerHeight / window.innerWidth;
 var frustumSize = 250;
 var ballAxes = new THREE.AxesHelper(20)
 var currentTime, previousTime, timeInterval;
-var linearVelocity = 0.05;
+var linearVelocity = 0.1;
 var angularVelocity = 0.0025;
+var aceleration = 0.005;
+
+var balls = [];
 
 var KeyboardState = {
+    32: false, //space
     37: false, //left
     39: false, //right
     49: false, //1
@@ -37,9 +42,21 @@ var KeyboardState = {
 //INPUT
 onkeydown = onkeyup = function (e) {
     KeyboardState[e.keyCode] = e.type == "keydown";
+    if (KeyboardState[32]) {
+        //space
+        cannon[current_cannon].fire()
+    }
     if (KeyboardState[82]) {
         //R
-        ball1.Axes()
+        for (let i = 0; i < numberOfBalls; i++) {
+            balls[i].toggleAxes()
+        }
+        /*balls.map((ball) => {
+            console.log(ball)
+            return (
+               
+
+        })*/
     }
 };
 
@@ -55,7 +72,7 @@ class Wall extends THREE.Object3D {
         });
         this.height = 20;
         this.width = 100;
-        this.depth = 2.5;
+        this.depth = 3;
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
@@ -72,7 +89,7 @@ class Wall extends THREE.Object3D {
 }
 
 class Ball extends THREE.Object3D {
-    constructor(x, y, z) {
+    constructor(x, y, z, direction, move) {
         super();
         this.name = "Ball";
         this.radius = 3;
@@ -83,14 +100,23 @@ class Ball extends THREE.Object3D {
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
+        this.rotation.y = direction;
+        this.move = move
         this.axes = false;
+        this.time = 20
         addSphere(
             this,
             this.radius,
             this.material
         );
     }
-    Axes() {
+    getTime() {
+        return this.time;
+    }
+    hasColision() {
+
+    }
+    toggleAxes() {
         this.axes = !this.axes;
         this.axes ? this.add(ballAxes) : this.remove(ballAxes)
     }
@@ -100,6 +126,7 @@ class Cannon extends THREE.Object3D {
     constructor(x, y, z, angle) {
         super();
         this.name = "Cannon";
+        this.selected = false;
         this.material = new THREE.MeshBasicMaterial({
             wireframe: false,
             color: 0x8e8e8c
@@ -109,20 +136,31 @@ class Cannon extends THREE.Object3D {
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
-        addCylinder(this, this.radius, this.length, this.material, angle)
+        this.rotation.y = angle;
+        addCylinder(this, this.radius, this.length, this.material)
 
     }
     getRotationY() {
         return this.rotation.y;
     }
+    fire() {
+        var ball = new Ball(
+            this.position.x,
+            this.position.y,
+            this.position.z,
+            this.rotation.y,
+            true)
+        scene.add(ball)
+        balls.push(ball)
+    }
 }
 // ------ GEOMETRIES ------ //
 
-function addCylinder(obj, radius, height, material, angle) {
+function addCylinder(obj, radius, height, material) {
     geometry = new THREE.CylinderGeometry(radius, radius, height, 15);
     mesh = new THREE.Mesh(geometry, material);
     mesh.rotateZ(Math.PI / 2);
-    mesh.rotateX(angle);
+
     obj.add(mesh);
 }
 
@@ -207,19 +245,21 @@ function createScene() {
     scene = new THREE.Scene();
     scene.add(new THREE.AxesHelper(50));
 
-    leftWall = new Wall(-51.25, 0, 51.25, false);
+    leftWall = new Wall(-51.5, 0, 51.5, false);
     middleWall = new Wall(-100, 0, 0, true);
-    rightWall = new Wall(-51.25, 0, -51.25, false);
+    rightWall = new Wall(-51.5, 0, -51.5, false);
 
     cannon[0] = new Cannon(20, 0, 40, -0.3);
     cannon[1] = new Cannon(20, 0, 0, 0);
     cannon[2] = new Cannon(20, 0, -40, 0.3);
 
-
-    ball1 = new Ball(-50, 0, 20)
-
-    scene.add(ball1);
-
+    for (let i = 0; i < numberOfBalls; i++) {
+        var ball = new Ball(-92.5 * Math.random() - 3, 0, Math.random() < 0.5 ?
+            47 * Math.random() : -47 * Math.random(), 0, false)
+        balls.push(ball)
+        scene.add(ball)
+    }
+    console.log(balls)
     scene.add(cannon[0]);
     scene.add(cannon[1]);
     scene.add(cannon[2]);
@@ -254,6 +294,21 @@ function update() {
     currentTime = new Date().getTime();
     timeInterval = currentTime - previousTime;
     previousTime = currentTime;
+
+    balls.forEach(ball => {
+        if (ball.move)
+            ball.translateX(-linearVelocity * ball.time +
+                (aceleration * Math.pow(ball.time, 2)) / 2);
+        if (ball.time > 0)
+            ball.time -= 0.1
+        else {
+            ball.time = 0
+        }
+    });
+    // if (KeyboardState[32]) {
+    //SPACE
+
+    //}
     if (KeyboardState[37]) {
         if (cannon[current_cannon].getRotationY() < 0.8)
             cannon[current_cannon].rotateY(timeInterval * angularVelocity)
