@@ -85,7 +85,7 @@ class Ball extends THREE.Object3D {
         this.name = "Ball";
         this.radius = 3;
         this.material = new THREE.MeshBasicMaterial({
-            wireframe: false,
+            wireframe: true,
             color: 0xffffff
         });
         this.position.x = x;
@@ -97,7 +97,7 @@ class Ball extends THREE.Object3D {
 
         this.axes = new THREE.AxesHelper(20);
         this.displayAxes = false;
-        addSphere(
+        this.sphere = addSphere(
             this,
             this.radius,
             this.material
@@ -112,6 +112,9 @@ class Ball extends THREE.Object3D {
     toggleAxes() {
         this.displayAxes = !this.displayAxes;
         this.displayAxes ? this.add(this.axes) : this.remove(this.axes)
+    }
+    rotateBall() {
+        this.sphere.rotation.z += 0.1;
     }
 }
 
@@ -160,9 +163,10 @@ function addCylinder(obj, radius, height, material) {
 
 
 function addSphere(obj, radius, material) {
-    geometry = new THREE.SphereGeometry(radius, 20, 20);
+    geometry = new THREE.SphereGeometry(radius, 20, 5);
     mesh = new THREE.Mesh(geometry, material);
     obj.add(mesh);
+    return mesh;
 }
 
 function addRectangularPrism(obj, dimX, dimY, dimZ, material, rotateY) {
@@ -302,6 +306,7 @@ function update() {
             cameraUpdate(ball);
             ball.translateX(-linearVelocity * ball.time +
                 (aceleration * Math.pow(ball.time, 2)) / 2);
+            ball.rotateBall();
         }
         if (ball.time > 0)
             ball.time -= 0.1
