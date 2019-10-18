@@ -14,13 +14,13 @@ var numberOfBalls = 8//prompt("How many balls do you want");
 var camera = new Array(3).fill(null);
 var cannon = new Array(3).fill(null);
 var current_camera = 0, current_cannon = 1;
-var scene, renderer, leftWall, middleWall, rightWall
+var scene, renderer, leftWall, middleWall, rightWall, floor
 var geometry, material, mesh;
 var aspectRatio = window.innerHeight / window.innerWidth;
 var frustumSize = 250;
 var currentTime, previousTime, timeInterval;
 var linearVelocity = 0.1;
-var angularVelocity = 0.0025;
+var angularVelocity = 0.0015;
 var aceleration = 0.005;
 
 var balls = [];
@@ -53,6 +53,31 @@ onkeydown = onkeyup = function (e) {
 
 // ------ OBJECT CLASSES ------ //
 
+class Floor extends THREE.Object3D {
+    constructor(x, y, z) {
+        super();
+        this.name = "Floor";
+        this.material = new THREE.MeshBasicMaterial({
+            wireframe: false,
+            color: 0x0f0096
+        });
+        this.height = 2;
+        this.width = 100;
+        this.depth = 100;
+        this.position.x = x;
+        this.position.y = y;
+        this.position.z = z;
+
+        addRectangularPrism(
+            this,
+            this.width,
+            this.height,
+            this.depth,
+            this.material,
+            false
+        );
+    }
+}
 class Wall extends THREE.Object3D {
     constructor(x, y, z, rotateY) {
         super();
@@ -114,7 +139,8 @@ class Ball extends THREE.Object3D {
         this.displayAxes ? this.add(this.axes) : this.remove(this.axes)
     }
     rotateBall() {
-        this.sphere.rotation.z += 0.1;
+        this.sphere.rotation.z -= (angularVelocity * this.time -
+            (aceleration * Math.pow(this.time, 2)) / 2);
     }
 }
 
@@ -243,17 +269,19 @@ function createScene() {
     scene = new THREE.Scene();
     scene.add(new THREE.AxesHelper(50));
 
-    leftWall = new Wall(-51.5, 0, 51.5, false);
-    middleWall = new Wall(-100, 0, 0, true);
-    rightWall = new Wall(-51.5, 0, -51.5, false);
+    leftWall = new Wall(0, 0, 51.5, false);
+    middleWall = new Wall(-48.5, 0, 0, true);
+    rightWall = new Wall(0, 0, -51.5, false);
+    floor = new Floor(0, -4, 0);
 
-    cannon[0] = new Cannon(20, 0, 40, -0.3);
-    cannon[1] = new Cannon(20, 0, 0, 0);
-    cannon[2] = new Cannon(20, 0, -40, 0.3);
+    cannon[0] = new Cannon(40, 0, 40, -0.3);
+    cannon[1] = new Cannon(40, 0, 0, 0);
+    cannon[2] = new Cannon(40, 0, -40, 0.3);
 
     for (let i = 0; i < numberOfBalls; i++) {
-        var ball = new Ball(-92.5 * Math.random() - 3, 0, Math.random() < 0.5 ?
-            47 * Math.random() : -47 * Math.random(), 0, false)
+        var ball = new Ball(Math.random() < 0.5 ?
+            22 * Math.random() : -44.5 * Math.random(), 0, Math.random() < 0.5 ?
+            47.5 * Math.random() : -47.5 * Math.random(), 0, false)
         balls.push(ball)
         scene.add(ball)
     }
@@ -265,6 +293,7 @@ function createScene() {
     scene.add(leftWall);
     scene.add(middleWall);
     scene.add(rightWall);
+    scene.add(floor);
 }
 
 function render() {
