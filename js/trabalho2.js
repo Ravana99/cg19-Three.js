@@ -29,7 +29,6 @@ var displayAxes = true;
 
 var balls = [];
 var walls = [];
-var wallsNormals = [];
 
 var KeyboardState = {
     32: false, //space
@@ -154,10 +153,12 @@ class Ball extends THREE.Object3D {
     checkBallCollision(other) {
         if (this.position.distanceToSquared(other.position) <= (this.radius * 2) ** 2) {
             this.collided = true;
-            //other.collided = true;
             console.log("ball collision");
+            console.log(this);
+            console.log(other);
+            return true;
         }
-        return this.position.distanceToSquared(other.position) <= (this.radius * 2) ** 2; 
+        return false;
     }
     checkAllBallCollisions() {
         for (var i = 0; i < balls.length; i++)
@@ -185,15 +186,18 @@ class Ball extends THREE.Object3D {
     }
     processBallCollision(other) {  
         [this.currentVelocity, other.currentVelocity] = [other.currentVelocity, this.currentVelocity];
+        this.initialVelocity = this.currentVelocity;
+        other.initialVelocity = other.currentVelocity;
+        this.initialTime = new Date().getTime();
+        other.initialTime = new Date().getTime();
         if (this.currentVelocity > 0 && other.currentVelocity > 0) {
-            this.rotation.y += Math.PI;
-            other.rotation.y += Math.PI;
+            this.rotation.y = -this.rotation.y + Math.PI;
+            other.rotation.y = -other.rotation.y + Math.PI;
         }
-        else if (this.currentVelocity == 0 && other.currentVelocity > 0)
-            other.rotation.y = this.rotation.y;
-        else if (this.currentVelocity > 0 && other.currentVelocity > 0)
-            this.rotation.y = other.rotation.y;
+        else if ((this.currentVelocity == 0 && other.currentVelocity > 0) || (this.currentVelocity > 0 && other.currentVelocity == 0))
+            [this.rotation.y, other.rotation.y] = [other.rotation.y, this.rotation.y];
     }
+
     processWallCollision(other) {
         if (other === walls[0]) //left wall
             this.rotation.y = -this.rotation.y;
@@ -204,14 +208,8 @@ class Ball extends THREE.Object3D {
     }
     updatePosition() {
         if(this.collided) {
-            console.log("before");
-            console.log(this.oldPosition);
-            console.log(this.position);
             this.position.set(this.oldPosition.x, this.oldPosition.y, this.oldPosition.z);
             this.collided = false;
-            console.log("after");
-            console.log(this.oldPosition);
-            console.log(this.position);
         }
         else {
             this.oldPosition = this.position.clone();
@@ -355,7 +353,6 @@ function createScene() {
     rightWall = new Wall(0, 0, -51.5, false);
     walls.push(rightWall);
     floor = new Floor(0, -4, 0);
-    wallsNormals = [new THREE.Vector3(0,0,-1), new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,1)];
 
     cannon[0] = new Cannon(40, 0, 40, -0.3);
     cannon[1] = new Cannon(40, 0, 0, 0);
@@ -401,7 +398,6 @@ function init() {
 function handleCollisions() {
     for (var i = 0; i < balls.length; i++) {
         if (balls[i].position.x > MAX_X) {
-            console.log("lololo");
             scene.remove(balls[i]);
             balls.splice(i, 1);
             i--;
@@ -409,8 +405,12 @@ function handleCollisions() {
         }
 
         for (var j = i + 1; j < balls.length; j++)
-            if(balls[i].checkBallCollision(balls[j]))
+            if(balls[i].checkBallCollision(balls[j])) {
+                console.log(i);
                 balls[i].processBallCollision(balls[j]);
+                //break;
+            }
+                
         
         for (var j = 0; j < walls.length; j++)
             if(balls[i].checkWallCollision(walls[j]))
