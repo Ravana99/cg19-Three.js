@@ -9,7 +9,12 @@
 // The first entry of the camera array (index 0) is ignored to make the code more intuitive
 // (for example, camera[1] is the first camera that you switch to by pressing 1, etc.)
 
-var numberOfBalls = 8//prompt("How many balls do you want");
+var numberOfBalls = 8;
+
+const MAX_X = 40;
+const MAX_Z = 47;
+const MIN_X = -44;
+const MIN_Z = -47;
 
 var camera = new Array(3).fill(null);
 var cannon = new Array(3).fill(null);
@@ -19,11 +24,12 @@ var geometry, material, mesh;
 var aspectRatio = window.innerHeight / window.innerWidth;
 var frustumSize = 250;
 var currentTime, previousTime, timeInterval;
-var linearVelocity = 0.1;
-var angularVelocity = 0.0015;
-var aceleration = 0.005;
+var angularVelocity = 0.002;
+var acceleration = 0.001;
 
 var balls = [];
+var walls = [];
+var wallsNormals = [];
 
 var KeyboardState = {
     32: false, //space
@@ -38,7 +44,9 @@ var KeyboardState = {
     87: false //W
 };
 
-//INPUT
+
+// ------ INPUT ------ //
+
 onkeydown = onkeyup = function (e) {
     KeyboardState[e.keyCode] = e.type == "keydown";
     if (KeyboardState[32]) {
@@ -50,6 +58,7 @@ onkeydown = onkeyup = function (e) {
             ball.toggleAxes())
     }
 };
+
 
 // ------ OBJECT CLASSES ------ //
 
@@ -105,7 +114,7 @@ class Wall extends THREE.Object3D {
 }
 
 class Ball extends THREE.Object3D {
-    constructor(x, y, z, direction, move) {
+    constructor(x, y, z, angle) {
         super();
         this.name = "Ball";
         this.radius = 3;
@@ -116,12 +125,16 @@ class Ball extends THREE.Object3D {
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
-        this.rotation.y = direction;
-        this.move = move
-        this.time = 20
+        this.oldPosition = new THREE.Vector3(x,y,z);
+        this.rotation.y = angle;
+        this.collided = false;
+        this.initialVelocity = Math.random() * 1.5 + 1.5;
+        this.currentVelocity = 0;
+        this.initialTime = new Date().getTime();
 
         this.axes = new THREE.AxesHelper(20);
-        this.displayAxes = false;
+        this.displayAxes = true;
+        this.add(this.axes)
         this.sphere = addSphere(
             this,
             this.radius,
@@ -131,16 +144,78 @@ class Ball extends THREE.Object3D {
     getTime() {
         return this.time;
     }
-    hasColision() {
-
-    }
     toggleAxes() {
         this.displayAxes = !this.displayAxes;
-        this.displayAxes ? this.add(this.axes) : this.remove(this.axes)
+        this.displayAxes ? this.add(this.axes) : this.remove(this.axes);
     }
     rotateBall() {
-        this.sphere.rotation.z -= (angularVelocity * this.time -
-            (aceleration * Math.pow(this.time, 2)) / 2);
+        this.sphere.rotation.z -= (this.currentVelocity / this.radius);
+    }
+    checkBallCollision(other) {
+        if (this.position.distanceToSquared(other.position) <= (this.radius * 2) ** 2) {
+            this.collided = true;
+            //other.collided = true;
+            console.log("ball collision");
+        }
+        return this.position.distanceToSquared(other.position) <= (this.radius * 2) ** 2; 
+    }
+    checkAllBallCollisions() {
+        for (var i = 0; i < balls.length; i++)
+            if (this.checkBallCollision(balls[i]))
+                return true;
+        return false;
+    }
+    checkWallCollision(other) {
+        if (other === walls[0] && this.position.z > MAX_Z) { //left wall
+            console.log("left wall collision");
+            this.collided = true;
+            return true;
+        }
+        else if (other === walls[1] && this.position.x < MIN_X) { //middle wall
+            console.log("middle wall collision");
+            this.collided = true;
+            return true;
+        }
+        else if (other === walls[2] && this.position.z < MIN_Z) { //right wall
+            console.log("right wall collision");
+            this.collided = true;
+            return true;
+        }
+        return false;
+    }
+    processBallCollision(other) {  
+        [this.currentVelocity, other.currentVelocity] = [other.currentVelocity, this.currentVelocity];
+        if (this.currentVelocity > 0 && other.currentVelocity > 0) {
+            this.rotation.y += Math.PI;
+            other.rotation.y += Math.PI;
+        }
+        else if (this.currentVelocity == 0 && other.currentVelocity > 0)
+            other.rotation.y = this.rotation.y;
+        else if (this.currentVelocity > 0 && other.currentVelocity > 0)
+            this.rotation.y = other.rotation.y;
+    }
+    processWallCollision(other) {
+        if (other === walls[0]) //left wall
+            this.rotation.y = -this.rotation.y;
+        else if (other === walls[1]) //middle wall
+            this.rotation.y = -this.rotation.y + Math.PI;
+        else if (other === walls[2]) //right wall
+            this.rotation.y = -this.rotation.y;
+    }
+    updatePosition() {
+        if(this.collided) {
+            console.log("before");
+            console.log(this.oldPosition);
+            console.log(this.position);
+            this.position.set(this.oldPosition.x, this.oldPosition.y, this.oldPosition.z);
+            this.collided = false;
+            console.log("after");
+            console.log(this.oldPosition);
+            console.log(this.position);
+        }
+        else {
+            this.oldPosition = this.position.clone();
+        }
     }
 }
 
@@ -172,13 +247,15 @@ class Cannon extends THREE.Object3D {
             this.position.x,
             this.position.y,
             this.position.z,
-            this.rotation.y,
-            true)
+            this.rotation.y)
         ball.add(camera[2])
         scene.add(ball)
         balls.push(ball)
+        ball.currentVelocity = ball.initialVelocity;
     }
 }
+
+
 // ------ GEOMETRIES ------ //
 
 function addCylinder(obj, radius, height, material) {
@@ -202,6 +279,8 @@ function addRectangularPrism(obj, dimX, dimY, dimZ, material, rotateY) {
         mesh.rotateY(Math.PI / 2);
     obj.add(mesh);
 }
+
+
 // ------ CAMERAS ------ //
 
 function createCamera1() {
@@ -229,7 +308,6 @@ function createCamera2() {
 }
 
 function createCamera3() {
-    //TODO
     camera[2] = new THREE.PerspectiveCamera(100,
         window.innerWidth / window.innerHeight, 1, 1000);
     camera[2].position.x = cannon[current_cannon].position.x + 20;
@@ -237,6 +315,7 @@ function createCamera3() {
     camera[2].position.z = cannon[current_cannon].position.z;
     camera[2].lookAt(cannon[current_cannon].position);
 }
+
 
 // ------ FUNCTIONS ------ //
 
@@ -270,20 +349,28 @@ function createScene() {
     scene.add(new THREE.AxesHelper(50));
 
     leftWall = new Wall(0, 0, 51.5, false);
+    walls.push(leftWall);
     middleWall = new Wall(-48.5, 0, 0, true);
+    walls.push(middleWall);
     rightWall = new Wall(0, 0, -51.5, false);
+    walls.push(rightWall);
     floor = new Floor(0, -4, 0);
+    wallsNormals = [new THREE.Vector3(0,0,-1), new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,1)];
 
     cannon[0] = new Cannon(40, 0, 40, -0.3);
     cannon[1] = new Cannon(40, 0, 0, 0);
     cannon[2] = new Cannon(40, 0, -40, 0.3);
 
     for (let i = 0; i < numberOfBalls; i++) {
-        var ball = new Ball(Math.random() < 0.5 ?
-            22 * Math.random() : -44.5 * Math.random(), 0, Math.random() < 0.5 ?
-            47.5 * Math.random() : -47.5 * Math.random(), 0, false)
-        balls.push(ball)
-        scene.add(ball)
+        var ball;
+        do {
+            ball = new Ball(Math.random() < 0.5 ?
+                22 * Math.random() : MIN_X * Math.random(), 0, Math.random() < 0.5 ?
+                MAX_Z * Math.random() : MIN_Z * Math.random(), 0);
+        } while (ball.checkAllBallCollisions());
+        
+        balls.push(ball);
+        scene.add(ball);
     }
     console.log(balls)
     scene.add(cannon[0]);
@@ -311,10 +398,24 @@ function init() {
     window.addEventListener("resize", onResize);
 }
 
-function animate() {
-    requestAnimationFrame(animate);
-    update();
-    render();
+function handleCollisions() {
+    for (var i = 0; i < balls.length; i++) {
+        if (balls[i].position.x > MAX_X) {
+            console.log("lololo");
+            scene.remove(balls[i]);
+            balls.splice(i, 1);
+            i--;
+            continue;
+        }
+
+        for (var j = i + 1; j < balls.length; j++)
+            if(balls[i].checkBallCollision(balls[j]))
+                balls[i].processBallCollision(balls[j]);
+        
+        for (var j = 0; j < walls.length; j++)
+            if(balls[i].checkWallCollision(walls[j]))
+                balls[i].processWallCollision(walls[j]);
+    }
 }
 
 function cameraUpdate(ball) {
@@ -331,22 +432,24 @@ function update() {
     previousTime = currentTime;
 
     balls.forEach(ball => {
-        if (ball.move) {
+        
+        if (ball.currentVelocity > 0) {
             cameraUpdate(ball);
-            ball.translateX(-linearVelocity * ball.time +
-                (aceleration * Math.pow(ball.time, 2)) / 2);
-            ball.rotateBall();
-        }
-        if (ball.time > 0)
-            ball.time -= 0.1
-        else {
-            ball.time = 0
+            ball.currentVelocity = ball.initialVelocity - acceleration * (currentTime - ball.initialTime);
+            if (ball.currentVelocity <= 0)
+                ball.currentVelocity = 0;
         }
     });
-    // if (KeyboardState[32]) {
-    //SPACE
 
-    //}
+    handleCollisions();
+
+    balls.forEach(ball => {
+        ball.updatePosition();
+        if (ball.currentVelocity > 0)
+            ball.translateX(-ball.currentVelocity);
+            ball.rotateBall();
+    });
+
     if (KeyboardState[37]) {
         if (cannon[current_cannon].getRotationX() < 0.8)
             cannon[current_cannon].rotateX(timeInterval * angularVelocity)
@@ -375,9 +478,14 @@ function update() {
         //Q
         current_cannon = 0;
     }
-
     if (KeyboardState[87]) {
         //W
         current_cannon = 1;
     }
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    update();
+    render();
 }
