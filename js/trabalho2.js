@@ -6,8 +6,6 @@
 //ARRAYS VS VARS (Camera,Cannon,Wall)???
 
 // GLOBAL VARIABLES
-// The first entry of the camera array (index 0) is ignored to make the code more intuitive
-// (for example, camera[1] is the first camera that you switch to by pressing 1, etc.)
 
 var numberOfBalls = 8;
 
@@ -26,6 +24,8 @@ var frustumSize = 250;
 var currentTime, previousTime, timeInterval;
 var angularVelocity = 0.002;
 var acceleration = 0.001;
+
+var displayAxes = true;
 
 var balls = [];
 var walls = [];
@@ -54,6 +54,7 @@ onkeydown = onkeyup = function (e) {
         cannon[current_cannon].fire()
     }
     if (KeyboardState[82]) {
+        displayAxes = !displayAxes;
         balls.map((ball) =>
             ball.toggleAxes())
     }
@@ -133,8 +134,8 @@ class Ball extends THREE.Object3D {
         this.initialTime = new Date().getTime();
 
         this.axes = new THREE.AxesHelper(20);
-        this.displayAxes = true;
-        this.add(this.axes)
+        if (displayAxes)
+            this.add(this.axes)
         this.sphere = addSphere(
             this,
             this.radius,
@@ -145,8 +146,7 @@ class Ball extends THREE.Object3D {
         return this.time;
     }
     toggleAxes() {
-        this.displayAxes = !this.displayAxes;
-        this.displayAxes ? this.add(this.axes) : this.remove(this.axes);
+        displayAxes ? this.add(this.axes) : this.remove(this.axes);
     }
     rotateBall() {
         this.sphere.rotation.z -= (this.currentVelocity / this.radius);
