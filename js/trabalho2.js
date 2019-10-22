@@ -287,7 +287,7 @@ function addCylinder(obj, radius, height, material) {
 }
 
 function addSphere(obj, radius, material) {
-    geometry = new THREE.SphereGeometry(radius, 20, 20);
+    geometry = new THREE.SphereGeometry(radius, 20, 5);
     mesh = new THREE.Mesh(geometry, material);
     obj.add(mesh);
     return mesh;
