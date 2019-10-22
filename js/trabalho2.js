@@ -1,34 +1,37 @@
-//Group 46 - Joao Fonseca 89476, Tiago Pires 89544, Tomas Lopes 89552
+// Group 46 - Joao Fonseca 89476, Tiago Pires 89544, Tomas Lopes 89552
 
 "use strict";
 
-//QUESTIONS
-//ARRAYS VS VARS (Camera,Cannon,Wall)???
+// ------ GLOBAL VARIABLES AND CONSTANTS ------ //
 
-// GLOBAL VARIABLES
-
-var numberOfBalls = 8;
-
-const MAX_X = 40;
+const numberOfBalls = 8;
+const MAX_X = 47;
 const MAX_Z = 47;
 const MIN_X = -44;
 const MIN_Z = -47;
 
 var camera = new Array(3).fill(null);
+var current_camera = 0;
+var ballOnCamera = null;
 var cannon = new Array(3).fill(null);
-var current_camera = 0, current_cannon = 1;
-var scene, renderer, leftWall, middleWall, rightWall, floor
-var geometry, material, mesh;
-var aspectRatio = window.innerHeight / window.innerWidth;
-var frustumSize = 250;
-var currentTime, previousTime, timeInterval;
-var angularVelocity = 0.002;
-var acceleration = 0.001;
+var current_cannon = 1;
 
-var displayAxes = true;
-
+var leftWall, middleWall, rightWall, floor;
 var balls = [];
 var walls = [];
+
+var scene, renderer, geometry, material, mesh;
+var displayAxes = false;
+
+var aspectRatio = window.innerHeight / window.innerWidth;
+var widthHeight= new THREE.Vector2(window.innerWidth,window.innerHeight);
+var frustumSize = 250;
+
+var currentTime, previousTime, timeInterval;
+var lastFired = new Date().getTime();
+
+var angularVelocity = 0.002;
+var acceleration = 0.0005;
 
 var KeyboardState = {
     32: false, //space
@@ -73,6 +76,7 @@ class Floor extends THREE.Object3D {
         this.height = 2;
         this.width = 100;
         this.depth = 100;
+
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
@@ -98,6 +102,7 @@ class Wall extends THREE.Object3D {
         this.height = 20;
         this.width = 100;
         this.depth = 3;
+        
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
@@ -108,7 +113,7 @@ class Wall extends THREE.Object3D {
             this.height,
             this.depth,
             this.material,
-            rotateY //flag
+            rotateY //flag indicating if wall is rotated
         );
     }
 }
@@ -117,18 +122,20 @@ class Ball extends THREE.Object3D {
     constructor(x, y, z, angle) {
         super();
         this.name = "Ball";
-        this.radius = 3;
         this.material = new THREE.MeshBasicMaterial({
             wireframe: true,
             color: 0xffffff
         });
+        this.radius = 3;
+
+        this.rotation.y = angle;
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
-        this.oldPosition = new THREE.Vector3(x,y,z);
-        this.rotation.y = angle;
+
+        this.oldPosition = new THREE.Vector3(x, y, z);
         this.collided = false;
-        this.initialVelocity = Math.random() * 1.5 + 1.5;
+        this.initialVelocity = Math.random() * 1 + 1;
         this.currentVelocity = 0;
         this.initialTime = new Date().getTime();
 
@@ -141,31 +148,31 @@ class Ball extends THREE.Object3D {
             this.material
         );
     }
-    getTime() {
-        return this.time;
-    }
     toggleAxes() {
         displayAxes ? this.add(this.axes) : this.remove(this.axes);
     }
     rotateBall() {
         this.sphere.rotation.z -= (this.currentVelocity / this.radius);
     }
-    checkBallCollision(other) {
-        if (this.position.distanceToSquared(other.position) <= (this.radius * 2) ** 2) {
-            this.collided = true;
-            console.log("ball collision");
-            console.log(this);
-            console.log(other);
-            return true;
-        }
-        return false;
-    }
+    //checks if this ball collides with any of the others
+    //(only called on scene creation)
     checkAllBallCollisions() {
         for (var i = 0; i < balls.length; i++)
             if (this.checkBallCollision(balls[i]))
                 return true;
         return false;
     }
+    //checks if this ball collides with another
+    checkBallCollision(other) {
+        if (distanceSquared(this, other) <= (this.radius * 2) ** 2) {
+            this.collided = true;
+            other.collided = true
+            console.log("ball collision");
+            return true;
+        }
+        return false;
+    }
+    //checks if this ball collides with any of the walls
     checkWallCollision(other) {
         if (other === walls[0] && this.position.z > MAX_Z) { //left wall
             console.log("left wall collision");
@@ -184,20 +191,16 @@ class Ball extends THREE.Object3D {
         }
         return false;
     }
-    processBallCollision(other) {  
+    //treats ball-ball collisions
+    processBallCollision(other) {
         [this.currentVelocity, other.currentVelocity] = [other.currentVelocity, this.currentVelocity];
         this.initialVelocity = this.currentVelocity;
         other.initialVelocity = other.currentVelocity;
         this.initialTime = new Date().getTime();
         other.initialTime = new Date().getTime();
-        if (this.currentVelocity > 0 && other.currentVelocity > 0) {
-            this.rotation.y = -this.rotation.y + Math.PI;
-            other.rotation.y = -other.rotation.y + Math.PI;
-        }
-        else if ((this.currentVelocity == 0 && other.currentVelocity > 0) || (this.currentVelocity > 0 && other.currentVelocity == 0))
-            [this.rotation.y, other.rotation.y] = [other.rotation.y, this.rotation.y];
+        [this.rotation.y, other.rotation.y] = [other.rotation.y, this.rotation.y];
     }
-
+    //treats ball-wall collisions 
     processWallCollision(other) {
         if (other === walls[0]) //left wall
             this.rotation.y = -this.rotation.y;
@@ -206,8 +209,9 @@ class Ball extends THREE.Object3D {
         else if (other === walls[2]) //right wall
             this.rotation.y = -this.rotation.y;
     }
+    //updates this ball's position upon collision
     updatePosition() {
-        if(this.collided) {
+        if (this.collided) {
             this.position.set(this.oldPosition.x, this.oldPosition.y, this.oldPosition.z);
             this.collided = false;
         }
@@ -228,28 +232,39 @@ class Cannon extends THREE.Object3D {
         });
         this.length = 15;
         this.radius = 3.5;
+
+        this.rotation.y = angle;
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
-        this.rotation.y = angle;
+
         this.rotateZ(Math.PI / 2)
         this.add(new THREE.AxesHelper(20));
         addCylinder(this, this.radius, this.length, this.material)
 
     }
+    //gets the cannon aiming rotation
     getRotationX() {
         return this.rotation.y;
     }
+    //creates a ball and fires it
     fire() {
-        var ball = new Ball(
-            this.position.x,
-            this.position.y,
-            this.position.z,
-            this.rotation.y)
-        ball.add(camera[2])
-        scene.add(ball)
-        balls.push(ball)
-        ball.currentVelocity = ball.initialVelocity;
+        var t = new Date().getTime();
+        if (t - lastFired > 350) { // 350ms cooldown on fire
+
+            var ball = new Ball(
+                this.position.x,
+                this.position.y,
+                this.position.z,
+                this.rotation.y);
+            ball.add(camera[2]);
+            scene.add(ball);
+            balls.push(ball);
+            ballOnCamera = ball;
+
+            ball.currentVelocity = ball.initialVelocity;
+            lastFired = t;
+        }
     }
 }
 
@@ -261,7 +276,6 @@ function addCylinder(obj, radius, height, material) {
     mesh = new THREE.Mesh(geometry, material);
     obj.add(mesh);
 }
-
 
 function addSphere(obj, radius, material) {
     geometry = new THREE.SphereGeometry(radius, 20, 5);
@@ -317,6 +331,13 @@ function createCamera3() {
 
 // ------ FUNCTIONS ------ //
 
+//returns the distance between two balls (squared)
+function distanceSquared(obj1, obj2) {
+    return (obj2.position.x - obj1.position.x) ** 2 + 
+           (obj2.position.y - obj1.position.y) ** 2 +
+           (obj2.position.z - obj1.position.z) ** 2;
+}
+
 function onResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     aspectRatio = window.innerHeight / window.innerWidth;
@@ -328,16 +349,12 @@ function onResize() {
         camera[0].bottom = (-frustumSize * aspectRatio) / 2;
         camera[0].updateProjectionMatrix();
 
-        camera[1].left = frustumSize / -2;
-        camera[1].right = frustumSize / 2;
-        camera[1].top = (frustumSize * aspectRatio) / 2;
-        camera[1].bottom = (-frustumSize * aspectRatio) / 2;
+        renderer.getSize(widthHeight);
+        camera[1].aspect = widthHeight.x / widthHeight.y;
         camera[1].updateProjectionMatrix();
 
-        camera[2].left = frustumSize / -2;
-        camera[2].right = frustumSize / 2;
-        camera[2].top = (frustumSize * aspectRatio) / 2;
-        camera[2].bottom = (-frustumSize * aspectRatio) / 2;
+        renderer.getSize(widthHeight);
+        camera[2].aspect = widthHeight.x / widthHeight.y;
         camera[2].updateProjectionMatrix();
     }
 }
@@ -354,26 +371,26 @@ function createScene() {
     walls.push(rightWall);
     floor = new Floor(0, -4, 0);
 
-    cannon[0] = new Cannon(40, 0, 40, -0.3);
-    cannon[1] = new Cannon(40, 0, 0, 0);
-    cannon[2] = new Cannon(40, 0, -40, 0.3);
+    cannon[0] = new Cannon(60, 0, 35, -0.3);
+    cannon[1] = new Cannon(60, 0, 0, 0);
+    cannon[1].material.color.setHex(0xff6c00); //1 is selected by default
+    cannon[2] = new Cannon(60, 0, -35, 0.3);
 
     for (let i = 0; i < numberOfBalls; i++) {
         var ball;
+        // if a ball is immediately colliding upon creation, it doesn't get added to the scene
         do {
             ball = new Ball(Math.random() < 0.5 ?
-                22 * Math.random() : MIN_X * Math.random(), 0, Math.random() < 0.5 ?
+                35 * Math.random() : MIN_X * Math.random(), 0, Math.random() < 0.5 ?
                 MAX_Z * Math.random() : MIN_Z * Math.random(), 0);
         } while (ball.checkAllBallCollisions());
-        
+
         balls.push(ball);
         scene.add(ball);
     }
-    console.log(balls)
     scene.add(cannon[0]);
     scene.add(cannon[1]);
     scene.add(cannon[2]);
-
     scene.add(leftWall);
     scene.add(middleWall);
     scene.add(rightWall);
@@ -395,46 +412,51 @@ function init() {
     window.addEventListener("resize", onResize);
 }
 
+//checks and treats collisions
 function handleCollisions() {
     for (var i = 0; i < balls.length; i++) {
-        if (balls[i].position.x > MAX_X) {
+        //removes ball from scene if it leaves the floor
+        if (balls[i].position.x > MAX_X && (balls[i].rotation.y < -Math.PI/2 || balls[i].rotation.y > Math.PI/2 || balls[i].currentVelocity == 0)) {
+            if (balls[i] == ballOnCamera)
+                ballOnCamera = null;
             scene.remove(balls[i]);
             balls.splice(i, 1);
             i--;
             continue;
         }
 
+        //handles all ball-ball collisions
         for (var j = i + 1; j < balls.length; j++)
-            if(balls[i].checkBallCollision(balls[j])) {
-                console.log(i);
+            if (balls[i].checkBallCollision(balls[j]))
                 balls[i].processBallCollision(balls[j]);
-                //break;
-            }
-                
-        
+
+        //handles all ball-wall collisions
         for (var j = 0; j < walls.length; j++)
-            if(balls[i].checkWallCollision(walls[j]))
+            if (balls[i].checkWallCollision(walls[j]))
                 balls[i].processWallCollision(walls[j]);
     }
 }
 
+//updates mobile camera when needed
 function cameraUpdate(ball) {
-    var offset = new THREE.Vector3(ball.position.x + 20, ball.position.y + 10, ball.position.z);
-    camera[2].rotation.y = ball.rotation.y
-    camera[2].position.lerp(offset, 1);
-    camera[2].lookAt(ball.position.x, ball.position.y, ball.position.z);
+    if (ball != null) {
+        var offset = new THREE.Vector3(ball.position.x + 20, ball.position.y + 10, ball.position.z);
+        camera[2].rotation.y = ball.rotation.y
+        camera[2].position.lerp(offset, 1);
+        camera[2].lookAt(ball.position.x, ball.position.y, ball.position.z);
+    }
 }
 
 function update() {
     createCamera3();
+    cameraUpdate(ballOnCamera);
     currentTime = new Date().getTime();
     timeInterval = currentTime - previousTime;
     previousTime = currentTime;
 
+    //updates the velocity values for all balls, if needed
     balls.forEach(ball => {
-        
         if (ball.currentVelocity > 0) {
-            cameraUpdate(ball);
             ball.currentVelocity = ball.initialVelocity - acceleration * (currentTime - ball.initialTime);
             if (ball.currentVelocity <= 0)
                 ball.currentVelocity = 0;
@@ -443,19 +465,19 @@ function update() {
 
     handleCollisions();
 
+    //updates positions after collision handling for all balls
     balls.forEach(ball => {
         ball.updatePosition();
-        if (ball.currentVelocity > 0)
-            ball.translateX(-ball.currentVelocity);
-            ball.rotateBall();
     });
 
     if (KeyboardState[37]) {
-        if (cannon[current_cannon].getRotationX() < 0.8)
+        //rotates cannon to the right
+        if (cannon[current_cannon].getRotationX() < 0.6)
             cannon[current_cannon].rotateX(timeInterval * angularVelocity)
     }
     if (KeyboardState[39]) {
-        if (cannon[current_cannon].getRotationX() > -0.8)
+        //rotates cannon to the left
+        if (cannon[current_cannon].getRotationX() > -0.6)
             cannon[current_cannon].rotateX(timeInterval * -angularVelocity)
     }
     if (KeyboardState[49]) {
@@ -472,16 +494,29 @@ function update() {
     }
     if (KeyboardState[69]) {
         //E
+        cannon[current_cannon].material.color.setHex(0x8e8e8c);
         current_cannon = 2;
+        cannon[current_cannon].material.color.setHex(0xff6c00);
     }
     if (KeyboardState[81]) {
         //Q
+        cannon[current_cannon].material.color.setHex(0x8e8e8c);
         current_cannon = 0;
+        cannon[current_cannon].material.color.setHex(0xff6c00);
     }
     if (KeyboardState[87]) {
         //W
+        cannon[current_cannon].material.color.setHex(0x8e8e8c);
         current_cannon = 1;
+        cannon[current_cannon].material.color.setHex(0xff6c00);
     }
+
+    //moves the balls after collision handling
+    balls.forEach(ball => {
+        if (ball.currentVelocity > 0)
+            ball.translateX(-ball.currentVelocity);
+        ball.rotateBall();
+    });
 }
 
 function animate() {
