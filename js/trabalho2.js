@@ -4,7 +4,7 @@
 
 // ------ GLOBAL VARIABLES AND CONSTANTS ------ //
 
-const numberOfBalls = 8;
+const numberOfBalls = prompt("How many balls do you want");
 const MAX_X = 47;
 const MAX_Z = 47;
 const MIN_X = -44;
@@ -21,10 +21,11 @@ var balls = [];
 var walls = [];
 
 var scene, renderer, geometry, material, mesh;
-var displayAxes = false;
+var displayAxes = false,
+    displayWireFrame = false;
 
 var aspectRatio = window.innerHeight / window.innerWidth;
-var widthHeight= new THREE.Vector2(window.innerWidth,window.innerHeight);
+var widthHeight = new THREE.Vector2(window.innerWidth, window.innerHeight);
 var frustumSize = 250;
 
 var currentTime, previousTime, timeInterval;
@@ -54,6 +55,12 @@ onkeydown = onkeyup = function (e) {
     if (KeyboardState[32]) {
         //space
         cannon[current_cannon].fire()
+    }
+    if (KeyboardState[52]) {
+        //4
+        displayWireFrame = !displayWireFrame;
+        balls.map((ball) =>
+            ball.toggleWireFrame())
     }
     if (KeyboardState[82]) {
         displayAxes = !displayAxes;
@@ -102,7 +109,7 @@ class Wall extends THREE.Object3D {
         this.height = 20;
         this.width = 100;
         this.depth = 3;
-        
+
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
@@ -123,7 +130,7 @@ class Ball extends THREE.Object3D {
         super();
         this.name = "Ball";
         this.material = new THREE.MeshBasicMaterial({
-            wireframe: true,
+            wireframe: false,
             color: 0xffffff
         });
         this.radius = 3;
@@ -142,11 +149,16 @@ class Ball extends THREE.Object3D {
         this.axes = new THREE.AxesHelper(20);
         if (displayAxes)
             this.add(this.axes)
+        if (displayWireFrame)
+            this.material.wireframe = true
         this.sphere = addSphere(
             this,
             this.radius,
             this.material
         );
+    }
+    toggleWireFrame() {
+        displayWireFrame ? this.material.wireframe = true : this.material.wireframe = false;
     }
     toggleAxes() {
         displayAxes ? this.add(this.axes) : this.remove(this.axes);
@@ -178,13 +190,11 @@ class Ball extends THREE.Object3D {
             console.log("left wall collision");
             this.collided = true;
             return true;
-        }
-        else if (other === walls[1] && this.position.x < MIN_X) { //middle wall
+        } else if (other === walls[1] && this.position.x < MIN_X) { //middle wall
             console.log("middle wall collision");
             this.collided = true;
             return true;
-        }
-        else if (other === walls[2] && this.position.z < MIN_Z) { //right wall
+        } else if (other === walls[2] && this.position.z < MIN_Z) { //right wall
             console.log("right wall collision");
             this.collided = true;
             return true;
@@ -214,8 +224,7 @@ class Ball extends THREE.Object3D {
         if (this.collided) {
             this.position.set(this.oldPosition.x, this.oldPosition.y, this.oldPosition.z);
             this.collided = false;
-        }
-        else {
+        } else {
             this.oldPosition = this.position.clone();
         }
     }
@@ -278,7 +287,7 @@ function addCylinder(obj, radius, height, material) {
 }
 
 function addSphere(obj, radius, material) {
-    geometry = new THREE.SphereGeometry(radius, 20, 5);
+    geometry = new THREE.SphereGeometry(radius, 20, 20);
     mesh = new THREE.Mesh(geometry, material);
     obj.add(mesh);
     return mesh;
@@ -333,9 +342,9 @@ function createCamera3() {
 
 //returns the distance between two balls (squared)
 function distanceSquared(obj1, obj2) {
-    return (obj2.position.x - obj1.position.x) ** 2 + 
-           (obj2.position.y - obj1.position.y) ** 2 +
-           (obj2.position.z - obj1.position.z) ** 2;
+    return (obj2.position.x - obj1.position.x) ** 2 +
+        (obj2.position.y - obj1.position.y) ** 2 +
+        (obj2.position.z - obj1.position.z) ** 2;
 }
 
 function onResize() {
@@ -402,7 +411,9 @@ function render() {
 }
 
 function init() {
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({
+        antialias: true
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
     createScene();
@@ -416,7 +427,7 @@ function init() {
 function handleCollisions() {
     for (var i = 0; i < balls.length; i++) {
         //removes ball from scene if it leaves the floor
-        if (balls[i].position.x > MAX_X && (balls[i].rotation.y < -Math.PI/2 || balls[i].rotation.y > Math.PI/2 || balls[i].currentVelocity == 0)) {
+        if (balls[i].position.x > MAX_X && (balls[i].rotation.y < -Math.PI / 2 || balls[i].rotation.y > Math.PI / 2 || balls[i].currentVelocity == 0)) {
             if (balls[i] == ballOnCamera)
                 ballOnCamera = null;
             scene.remove(balls[i]);
