@@ -4,7 +4,15 @@
 
 // ------ GLOBAL VARIABLES AND CONSTANTS ------ //
 
-const numberOfBalls = prompt("How many balls do you want");
+var numberOfBalls;
+var x = prompt("How many balls do you want? (0-50)");
+if (x < 0)
+    numberOfBalls = 0;
+else if (x > 50)
+    numberOfBalls = 50;
+else
+    numberOfBalls = x;
+
 const MAX_X = 47;
 const MAX_Z = 47;
 const MIN_X = -44;
@@ -41,32 +49,24 @@ var KeyboardState = {
     49: false, //1
     50: false, //2
     51: false, //3
+    52: false, //4
     69: false, //E
     81: false, //Q
     82: false, //R
     87: false //W
 };
 
+var wasPressed = {
+    32: false, //space
+    52: false, //4
+    82: false, //R
+};
 
-// ------ INPUT ------ //
+
+// ------ INPUT DETECTION ------ //
 
 onkeydown = onkeyup = function (e) {
     KeyboardState[e.keyCode] = e.type == "keydown";
-    if (KeyboardState[32]) {
-        //space
-        cannon[current_cannon].fire()
-    }
-    if (KeyboardState[52]) {
-        //4
-        displayWireFrame = !displayWireFrame;
-        balls.map((ball) =>
-            ball.toggleWireFrame())
-    }
-    if (KeyboardState[82]) {
-        displayAxes = !displayAxes;
-        balls.map((ball) =>
-            ball.toggleAxes())
-    }
 };
 
 
@@ -221,12 +221,12 @@ class Ball extends THREE.Object3D {
     }
     //updates this ball's position upon collision
     updatePosition() {
-        if (this.collided) {
+        if (this.collided)
             this.position.set(this.oldPosition.x, this.oldPosition.y, this.oldPosition.z);
-            this.collided = false;
-        } else {
-            this.oldPosition = this.position.clone();
-        }
+    }
+    //updates this ball's last valid position
+    updateOldPosition() {
+        this.oldPosition = this.position.clone();
     }
 }
 
@@ -248,7 +248,6 @@ class Cannon extends THREE.Object3D {
         this.position.z = z;
 
         this.rotateZ(Math.PI / 2)
-        this.add(new THREE.AxesHelper(20));
         addCylinder(this, this.radius, this.length, this.material)
 
     }
@@ -259,7 +258,7 @@ class Cannon extends THREE.Object3D {
     //creates a ball and fires it
     fire() {
         var t = new Date().getTime();
-        if (t - lastFired > 350) { // 350ms cooldown on fire
+        if (t - lastFired > 200) { // 200ms cooldown on fire
 
             var ball = new Ball(
                 this.position.x,
@@ -347,6 +346,19 @@ function distanceSquared(obj1, obj2) {
         (obj2.position.z - obj1.position.z) ** 2;
 }
 
+function init() {
+    renderer = new THREE.WebGLRenderer({
+        antialias: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    createScene();
+    createCamera1();
+    createCamera2();
+    createCamera3();
+    window.addEventListener("resize", onResize);
+}
+
 function onResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     aspectRatio = window.innerHeight / window.innerWidth;
@@ -370,7 +382,6 @@ function onResize() {
 
 function createScene() {
     scene = new THREE.Scene();
-    scene.add(new THREE.AxesHelper(50));
 
     leftWall = new Wall(0, 0, 51.5, false);
     walls.push(leftWall);
@@ -410,44 +421,6 @@ function render() {
     renderer.render(scene, camera[current_camera]);
 }
 
-function init() {
-    renderer = new THREE.WebGLRenderer({
-        antialias: true
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-    createScene();
-    createCamera1();
-    createCamera2();
-    createCamera3();
-    window.addEventListener("resize", onResize);
-}
-
-//checks and treats collisions
-function handleCollisions() {
-    for (var i = 0; i < balls.length; i++) {
-        //removes ball from scene if it leaves the floor
-        if (balls[i].position.x > MAX_X && (balls[i].rotation.y < -Math.PI / 2 || balls[i].rotation.y > Math.PI / 2 || balls[i].currentVelocity == 0)) {
-            if (balls[i] == ballOnCamera)
-                ballOnCamera = null;
-            scene.remove(balls[i]);
-            balls.splice(i, 1);
-            i--;
-            continue;
-        }
-
-        //handles all ball-ball collisions
-        for (var j = i + 1; j < balls.length; j++)
-            if (balls[i].checkBallCollision(balls[j]))
-                balls[i].processBallCollision(balls[j]);
-
-        //handles all ball-wall collisions
-        for (var j = 0; j < walls.length; j++)
-            if (balls[i].checkWallCollision(walls[j]))
-                balls[i].processWallCollision(walls[j]);
-    }
-}
-
 //updates mobile camera when needed
 function cameraUpdate(ball) {
     if (ball != null) {
@@ -458,14 +431,8 @@ function cameraUpdate(ball) {
     }
 }
 
-function update() {
-    createCamera3();
-    cameraUpdate(ballOnCamera);
-    currentTime = new Date().getTime();
-    timeInterval = currentTime - previousTime;
-    previousTime = currentTime;
-
-    //updates the velocity values for all balls, if needed
+//updates the velocity values for all balls, if needed
+function updateVelocities(currentTime) {
     balls.forEach(ball => {
         if (ball.currentVelocity > 0) {
             ball.currentVelocity = ball.initialVelocity - acceleration * (currentTime - ball.initialTime);
@@ -473,14 +440,69 @@ function update() {
                 ball.currentVelocity = 0;
         }
     });
+}
 
-    handleCollisions();
+//checks and treats collisions
+function handleCollisions() {
+    var hasCollision;
+    do {
+        hasCollision = false;
+        for (var i = 0; i < balls.length; i++) {
+            //removes ball from scene if it leaves the floor
+            if (balls[i].position.x > MAX_X && (balls[i].rotation.y < -Math.PI / 2 || balls[i].rotation.y > Math.PI / 2 || balls[i].currentVelocity == 0)) {
+                if (balls[i] == ballOnCamera)
+                    ballOnCamera = null;
+                scene.remove(balls[i]);
+                balls.splice(i, 1);
+                i--;
+                continue;
+            }
 
-    //updates positions after collision handling for all balls
+            //handles all ball-ball collisions
+            for (var j = i + 1; j < balls.length; j++)
+                if (balls[i].checkBallCollision(balls[j])) {
+                    hasCollision = true;
+                    balls[i].processBallCollision(balls[j]);
+                }
+
+            //handles all ball-wall collisions
+            for (var j = 0; j < walls.length; j++)
+                if (balls[i].checkWallCollision(walls[j])) {
+                    hasCollision = true;
+                    balls[i].processWallCollision(walls[j]);
+                }
+        }
+        balls.forEach(ball => {
+            ball.updatePosition();
+        });
+        balls.forEach(ball => {
+            ball.collided = false;
+        });
+    } while (hasCollision);
+
     balls.forEach(ball => {
-        ball.updatePosition();
+        ball.updateOldPosition();
     });
+}
 
+//moves the balls after collision handling
+function moveBalls() {
+    balls.forEach(ball => {
+        if (ball.currentVelocity > 0)
+            ball.translateX(-ball.currentVelocity);
+        ball.rotateBall();
+    });
+}
+
+//handles keypresses
+function handleInput() {
+    if (KeyboardState[32] && !wasPressed[32]) {
+        //space
+        cannon[current_cannon].fire();
+        wasPressed[32] = true;
+    } else if (!KeyboardState[32]) {
+        wasPressed[32] = false;
+    }
     if (KeyboardState[37]) {
         //rotates cannon to the right
         if (cannon[current_cannon].getRotationX() < 0.6)
@@ -503,6 +525,15 @@ function update() {
         //3
         current_camera = 2;
     }
+    if (KeyboardState[52] && !wasPressed[52]) {
+        //4
+        displayWireFrame = !displayWireFrame;
+        balls.map((ball) =>
+            ball.toggleWireFrame());
+        wasPressed[52] = true;
+    } else if (!KeyboardState[52]) {
+        wasPressed[52] = false;
+    }
     if (KeyboardState[69]) {
         //E
         cannon[current_cannon].material.color.setHex(0x8e8e8c);
@@ -515,19 +546,34 @@ function update() {
         current_cannon = 0;
         cannon[current_cannon].material.color.setHex(0xff6c00);
     }
+    if (KeyboardState[82] && !wasPressed[82]) {
+        displayAxes = !displayAxes;
+        balls.map((ball) =>
+            ball.toggleAxes())
+        wasPressed[82] = true;
+    } else if (!KeyboardState[82]) {
+        wasPressed[82] = false;
+    }
     if (KeyboardState[87]) {
         //W
         cannon[current_cannon].material.color.setHex(0x8e8e8c);
         current_cannon = 1;
         cannon[current_cannon].material.color.setHex(0xff6c00);
     }
+}
 
-    //moves the balls after collision handling
-    balls.forEach(ball => {
-        if (ball.currentVelocity > 0)
-            ball.translateX(-ball.currentVelocity);
-        ball.rotateBall();
-    });
+function update() {
+    createCamera3();
+    cameraUpdate(ballOnCamera);
+    currentTime = new Date().getTime();
+    timeInterval = currentTime - previousTime;
+    previousTime = currentTime;
+
+    updateVelocities(currentTime)
+    handleCollisions();
+    moveBalls();
+
+    handleInput();
 }
 
 function animate() {
