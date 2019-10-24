@@ -179,7 +179,7 @@ class Ball extends THREE.Object3D {
         if (distanceSquared(this, other) <= (this.radius * 2) ** 2) {
             this.collided = true;
             other.collided = true
-            console.log("ball collision");
+            //"ball collision"
             return true;
         }
         return false;
@@ -187,15 +187,15 @@ class Ball extends THREE.Object3D {
     //checks if this ball collides with any of the walls
     checkWallCollision(other) {
         if (other === walls[0] && this.position.z > MAX_Z) { //left wall
-            console.log("left wall collision");
+            //"left wall collision"
             this.collided = true;
             return true;
         } else if (other === walls[1] && this.position.x < MIN_X) { //middle wall
-            console.log("middle wall collision");
+            //"middle wall collision"
             this.collided = true;
             return true;
         } else if (other === walls[2] && this.position.z < MIN_Z) { //right wall
-            console.log("right wall collision");
+            //"right wall collision");
             this.collided = true;
             return true;
         }
