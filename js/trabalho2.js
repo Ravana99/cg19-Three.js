@@ -485,6 +485,18 @@ function handleCollisions() {
     });
 }
 
+function toggleBallWireframe() {
+    displayWireFrame = !displayWireFrame;
+    balls.map((ball) =>
+        ball.toggleWireFrame());
+}
+
+function displayBallAxes() {
+    displayAxes = !displayAxes;
+    balls.map((ball) =>
+        ball.toggleAxes())
+}
+
 //moves the balls after collision handling
 function moveBalls() {
     balls.forEach(ball => {
@@ -492,6 +504,12 @@ function moveBalls() {
             ball.translateX(-ball.currentVelocity);
         ball.rotateBall();
     });
+}
+
+function changeActiveCannon(cannonNumber) {
+    cannon[current_cannon].material.color.setHex(0x8e8e8c);
+    current_cannon = cannonNumber;
+    cannon[current_cannon].material.color.setHex(0xff6c00);
 }
 
 //handles keypresses
@@ -527,38 +545,28 @@ function handleInput() {
     }
     if (KeyboardState[52] && !wasPressed[52]) {
         //4
-        displayWireFrame = !displayWireFrame;
-        balls.map((ball) =>
-            ball.toggleWireFrame());
+        toggleBallWireframe()
         wasPressed[52] = true;
     } else if (!KeyboardState[52]) {
         wasPressed[52] = false;
     }
     if (KeyboardState[69]) {
         //E
-        cannon[current_cannon].material.color.setHex(0x8e8e8c);
-        current_cannon = 2;
-        cannon[current_cannon].material.color.setHex(0xff6c00);
+        changeActiveCannon(2)
     }
     if (KeyboardState[81]) {
         //Q
-        cannon[current_cannon].material.color.setHex(0x8e8e8c);
-        current_cannon = 0;
-        cannon[current_cannon].material.color.setHex(0xff6c00);
+        changeActiveCannon(0)
     }
     if (KeyboardState[82] && !wasPressed[82]) {
-        displayAxes = !displayAxes;
-        balls.map((ball) =>
-            ball.toggleAxes())
+        displayBallAxes()
         wasPressed[82] = true;
     } else if (!KeyboardState[82]) {
         wasPressed[82] = false;
     }
     if (KeyboardState[87]) {
         //W
-        cannon[current_cannon].material.color.setHex(0x8e8e8c);
-        current_cannon = 1;
-        cannon[current_cannon].material.color.setHex(0xff6c00);
+        changeActiveCannon(1)
     }
 }
 
@@ -566,8 +574,6 @@ function update() {
     createCamera3();
     cameraUpdate(ballOnCamera);
     currentTime = new Date().getTime();
-    timeInterval = currentTime - previousTime;
-    previousTime = currentTime;
 
     updateVelocities(currentTime)
     handleCollisions();
