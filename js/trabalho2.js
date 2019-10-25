@@ -40,7 +40,7 @@ var currentTime, previousTime, timeInterval;
 var lastFired = new Date().getTime();
 
 var angularVelocity = 0.002;
-var acceleration = 0.0005;
+var acceleration = 0.001;
 
 var KeyboardState = {
     32: false, //space
@@ -142,7 +142,7 @@ class Ball extends THREE.Object3D {
 
         this.oldPosition = new THREE.Vector3(x, y, z);
         this.collided = false;
-        this.initialVelocity = Math.random() * 1 + 1;
+        this.initialVelocity = Math.random() * 2 + 2;
         this.currentVelocity = 0;
         this.initialTime = new Date().getTime();
 
@@ -485,18 +485,6 @@ function handleCollisions() {
     });
 }
 
-function toggleBallWireframe() {
-    displayWireFrame = !displayWireFrame;
-    balls.map((ball) =>
-        ball.toggleWireFrame());
-}
-
-function displayBallAxes() {
-    displayAxes = !displayAxes;
-    balls.map((ball) =>
-        ball.toggleAxes())
-}
-
 //moves the balls after collision handling
 function moveBalls() {
     balls.forEach(ball => {
@@ -506,30 +494,68 @@ function moveBalls() {
     });
 }
 
-function changeActiveCannon(cannonNumber) {
+function fireCannon() {
+    cannon[current_cannon].fire();
+    wasPressed[32] = true;
+}
+
+function rotateRight() {
+    if (cannon[current_cannon].getRotationX() < 0.6)
+        cannon[current_cannon].rotateX(timeInterval * angularVelocity)
+}
+
+function rotateLeft() {
+    if (cannon[current_cannon].getRotationX() > -0.6)
+        cannon[current_cannon].rotateX(timeInterval * -angularVelocity)
+}
+
+function wireframeToggle() {
+    displayWireFrame = !displayWireFrame;
+    balls.map((ball) =>
+        ball.toggleWireFrame());
+    wasPressed[52] = true;
+}
+
+function selectRightCannon() {
     cannon[current_cannon].material.color.setHex(0x8e8e8c);
-    current_cannon = cannonNumber;
+    current_cannon = 2;
+    cannon[current_cannon].material.color.setHex(0xff6c00);
+}
+
+function selectLeftCannon() {
+    cannon[current_cannon].material.color.setHex(0x8e8e8c);
+    current_cannon = 0;
+    cannon[current_cannon].material.color.setHex(0xff6c00);
+}
+
+function axesToggle() {
+    displayAxes = !displayAxes;
+    balls.map((ball) =>
+        ball.toggleAxes())
+    wasPressed[82] = true;
+}
+
+function selectMiddleCannon() {
+    cannon[current_cannon].material.color.setHex(0x8e8e8c);
+    current_cannon = 1;
     cannon[current_cannon].material.color.setHex(0xff6c00);
 }
 
 //handles keypresses
 function handleInput() {
     if (KeyboardState[32] && !wasPressed[32]) {
-        //space
-        cannon[current_cannon].fire();
-        wasPressed[32] = true;
+        // space
+        fireCannon();
     } else if (!KeyboardState[32]) {
         wasPressed[32] = false;
     }
     if (KeyboardState[37]) {
-        //rotates cannon to the right
-        if (cannon[current_cannon].getRotationX() < 0.6)
-            cannon[current_cannon].rotateX(timeInterval * angularVelocity)
+        // right
+        rotateRight();
     }
     if (KeyboardState[39]) {
-        //rotates cannon to the left
-        if (cannon[current_cannon].getRotationX() > -0.6)
-            cannon[current_cannon].rotateX(timeInterval * -angularVelocity)
+        // left
+        rotateLeft();
     }
     if (KeyboardState[49]) {
         //1
@@ -545,28 +571,27 @@ function handleInput() {
     }
     if (KeyboardState[52] && !wasPressed[52]) {
         //4
-        toggleBallWireframe()
-        wasPressed[52] = true;
+        wireframeToggle();
     } else if (!KeyboardState[52]) {
         wasPressed[52] = false;
     }
     if (KeyboardState[69]) {
         //E
-        changeActiveCannon(2)
+        selectRightCannon();
     }
     if (KeyboardState[81]) {
         //Q
-        changeActiveCannon(0)
+        selectLeftCannon();
     }
     if (KeyboardState[82] && !wasPressed[82]) {
-        displayBallAxes()
-        wasPressed[82] = true;
+        //R
+        axesToggle();
     } else if (!KeyboardState[82]) {
         wasPressed[82] = false;
     }
     if (KeyboardState[87]) {
         //W
-        changeActiveCannon(1)
+        selectMiddleCannon();
     }
 }
 
@@ -574,6 +599,8 @@ function update() {
     createCamera3();
     cameraUpdate(ballOnCamera);
     currentTime = new Date().getTime();
+    timeInterval = currentTime - previousTime;
+    previousTime = currentTime;
 
     updateVelocities(currentTime)
     handleCollisions();
