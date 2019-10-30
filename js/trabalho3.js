@@ -1,3 +1,9 @@
+// Group 46 - Joao Fonseca 89476, Tiago Pires 89544, Tomas Lopes 89552
+
+"use strict";
+
+const PHI = (1+Math.sqrt(5))/2;
+
 var camera = new Array(3).fill(null);
 var current_camera = 0;
 var wall, floor, painting, sculpture, support;
@@ -142,17 +148,61 @@ class Sculpture extends THREE.Object3D {
 
         this.material = {
             wireframe: false,
-            color: 0x0f0096
+            color: 0xffc0cb
         };
-
-        this.height = 2;
-        this.width = 100;
-        this.depth = 100;
 
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
 
+        this.sculpSize = 10;
+
+        this.geometry = new THREE.Geometry();
+        this.geometry.vertices.push( // With deformations (remove to see true icosahedron)
+            new THREE.Vector3(0, this.sculpSize+1, this.sculpSize*PHI),
+            new THREE.Vector3(0, -this.sculpSize-1, this.sculpSize*PHI-2),
+            new THREE.Vector3(0, -this.sculpSize, -this.sculpSize*PHI+1),
+            new THREE.Vector3(0, this.sculpSize, -this.sculpSize*PHI-2),
+
+            new THREE.Vector3(this.sculpSize+2, this.sculpSize*PHI+2, 0),
+            new THREE.Vector3(-this.sculpSize+2, this.sculpSize*PHI-1, 0),
+            new THREE.Vector3(-this.sculpSize-2, -this.sculpSize*PHI, 0),
+            new THREE.Vector3(this.sculpSize+1, -this.sculpSize*PHI, 0),
+
+            new THREE.Vector3(this.sculpSize*PHI+1, 0, this.sculpSize+2),
+            new THREE.Vector3(-this.sculpSize*PHI+2, 0, this.sculpSize),
+            new THREE.Vector3(-this.sculpSize*PHI, 0, -this.sculpSize+3),
+            new THREE.Vector3(this.sculpSize*PHI, 0, -this.sculpSize-2),
+        );        
+        
+        this.geometry.faces.push( // Order of vertices matters!! (counter-clockwise)
+            new THREE.Face3(1,8,0),
+            new THREE.Face3(1,0,9),
+            new THREE.Face3(1,9,6),
+            new THREE.Face3(1,6,7),
+            new THREE.Face3(1,7,8),
+
+            new THREE.Face3(11,4,8),
+            new THREE.Face3(8,4,0),
+            new THREE.Face3(4,5,0),
+            new THREE.Face3(0,5,9),
+            new THREE.Face3(5,10,9),
+
+            new THREE.Face3(9,10,6),
+            new THREE.Face3(10,2,6),
+            new THREE.Face3(6,2,7),
+            new THREE.Face3(7,2,11),
+            new THREE.Face3(7,11,8),
+
+            new THREE.Face3(3,10,5),
+            new THREE.Face3(3,5,4),
+            new THREE.Face3(3,4,11),
+            new THREE.Face3(3,11,2),
+            new THREE.Face3(3,2,10),
+        );
+
+        this.mesh = new Mesh(this.geometry, this.material);
+        this.add(this.mesh);
     }
 }
 class Support extends THREE.Object3D {
@@ -203,7 +253,7 @@ class Mesh extends THREE.Mesh {
         this.phongMaterial = materials[2]
         this.lambertMaterial = materials[1]
         this.basicMaterial = materials[0]
-        return this;
+        //return this;
     }
 }
 
@@ -273,7 +323,6 @@ function addDots(obj, Width, Height) {
 
 }
 
-
 function createCamera1() {
     camera[0] = new THREE.PerspectiveCamera(100,
         window.innerWidth / window.innerHeight, 1, 1000);
@@ -283,6 +332,18 @@ function createCamera1() {
     camera[0].lookAt(scene.position);
 
 }
+
+/* FOR TESTING
+function createCamera1() {
+    camera[0] = new THREE.PerspectiveCamera(100,
+        window.innerWidth / window.innerHeight, 1, 1000);
+    camera[0].position.x = 70;
+    camera[0].position.y = -30;
+    camera[0].position.z = 100;
+    camera[0].lookAt(support.position);
+}
+*/
+
 
 function createCamera2() {
 
@@ -309,6 +370,8 @@ function init() {
     createScene();
     createCamera1();
     createCamera2();
+
+
     window.addEventListener("resize", onResize);
 }
 
@@ -339,13 +402,15 @@ function createScene() {
 
     wall = new Wall(0, 0, -40);
     floor = new Floor(0, -75, 0);
-    painting = new Painting(-80, 0, 0);
     support = new Support(75, -70, 0);
+    sculpture = new Sculpture(73, -36+10*PHI, 20);
+    painting = new Painting(-80, 0, 0);
 
     scene.add(wall);
     scene.add(floor);
-    scene.add(painting)
-    scene.add(support)
+    scene.add(support);
+    scene.add(sculpture);
+    scene.add(painting);
 }
 
 function render() {
