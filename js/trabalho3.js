@@ -88,15 +88,19 @@ class Painting extends THREE.Object3D {
     constructor(x, y, z) {
         super();
         this.name = "Painting";
-        this.material = new THREE.MeshBasicMaterial({
+
+        this.frameMaterial = {
+            wireframe: false,
+            color: 0x4f421e
+        };
+        this.backgroundMaterial = {
             wireframe: false,
             color: 0x000000
-        });
-
-        this.dotMaterial = new THREE.MeshBasicMaterial({
+        };
+        this.dotMaterial = {
             wireframe: false,
             color: 0xfffff
-        });
+        };
 
 
         this.lineHeight = 2;
@@ -108,13 +112,24 @@ class Painting extends THREE.Object3D {
         this.position.y = y;
         this.position.z = z;
 
-        addRectangularPrism(
-            this,
+
+        this.backgroundGeometry = new THREE.BoxGeometry(
             this.width,
             this.height,
-            this.depth,
-            this.material
+            this.depth
         );
+        this.frameGeometry = new THREE.BoxGeometry(
+            this.width + 10,
+            this.height + 10,
+            this.depth
+        );
+
+        this.frameMesh = new Mesh(this.frameGeometry, this.frameMaterial);
+        this.backgroundMesh = new Mesh(this.backgroundGeometry, this.backgroundMaterial);
+
+        this.add(this.backgroundMesh)
+        this.add(this.frameMesh)
+
         addLines(this, this.lineHeight, this.width, this.height);
         addDots(this, this.width, this.height);
     }
@@ -124,10 +139,12 @@ class Sculpture extends THREE.Object3D {
     constructor(x, y, z) {
         super();
         this.name = "Sculpture";
-        this.material = new THREE.MeshBasicMaterial({
+
+        this.material = {
             wireframe: false,
             color: 0x0f0096
-        });
+        };
+
         this.height = 2;
         this.width = 100;
         this.depth = 100;
@@ -136,52 +153,61 @@ class Sculpture extends THREE.Object3D {
         this.position.y = y;
         this.position.z = z;
 
-        addRectangularPrism(
-            this,
-            this.width,
-            this.height,
-            this.depth,
-            this.material,
-            false
-        );
     }
 }
 class Support extends THREE.Object3D {
     constructor(x, y, z) {
         super();
         this.name = "Support";
-        this.material = new THREE.MeshBasicMaterial({
+        this.material = {
             wireframe: false,
             color: 0xc2c2c2
-        });
+        };
 
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
 
-        addCylinder(this, 30, 4, this.material, 0, 0, 0)
-        addCylinder(this, 15, 30, this.material, 0, 15, 0)
-        addCylinder(this, 30, 4, this.material, 0, 30, 0)
+        this.bottomGeometry = new THREE.CylinderGeometry(
+            20,
+            20,
+            4,
+            30
+        );
+        this.middleGeometry = new THREE.CylinderGeometry(
+            15, 15, 30, 30
+        );
+        this.topGeometry = new THREE.CylinderGeometry(
+            30, 20, 8, 30
+        );
+
+        this.bottomMesh = new Mesh(this.bottomGeometry, this.material);
+
+        this.middleMesh = new Mesh(this.middleGeometry, this.material);
+        this.middleMesh.position.y = 15
+
+        this.topMesh = new Mesh(this.topGeometry, this.material);
+        this.topMesh.position.y = 30
+
+        this.add(this.bottomMesh)
+        this.add(this.middleMesh)
+        this.add(this.topMesh)
+    }
+}
+
+
+class Mesh extends THREE.Mesh {
+    constructor(geometry, materialArguments) {
+        var materials = [new THREE.MeshBasicMaterial(materialArguments), new THREE.MeshLambertMaterial(materialArguments), new THREE.MeshPhongMaterial(materialArguments)]
+        super(geometry, materials[0])
+        this.phongMaterial = materials[2]
+        this.lambertMaterial = materials[1]
+        this.basicMaterial = materials[0]
+        return this;
     }
 }
 
 // ------ GEOMETRIES ------ //
-
-function addCylinder(obj, radius, height, material, x, y, z) {
-    geometry = new THREE.CylinderGeometry(radius, radius, height, 15);
-    mesh = new THREE.Mesh(geometry, material);
-    mesh.position.x = x
-    mesh.position.y = y
-    mesh.position.z = z
-    obj.add(mesh);
-}
-
-function addSphere(obj, radius, material) {
-    geometry = new THREE.SphereGeometry(radius, 20, 5);
-    mesh = new THREE.Mesh(geometry, material);
-    obj.add(mesh);
-    return mesh;
-}
 
 function addRectangularPrism(obj, dimX, dimY, dimZ, material) {
     geometry = new THREE.BoxGeometry(dimX, dimY, dimZ);
@@ -251,9 +277,9 @@ function addDots(obj, Width, Height) {
 function createCamera1() {
     camera[0] = new THREE.PerspectiveCamera(100,
         window.innerWidth / window.innerHeight, 1, 1000);
-    camera[0].position.x = 0;
+    camera[0].position.x = 40;
     camera[0].position.y = 0;
-    camera[0].position.z = 130;
+    camera[0].position.z = 150;
     camera[0].lookAt(scene.position);
 
 }
