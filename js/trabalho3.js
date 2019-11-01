@@ -2,12 +2,14 @@
 
 "use strict";
 
-const PHI = (1+Math.sqrt(5))/2;
+const PHI = (1 + Math.sqrt(5)) / 2;
 
 var camera = new Array(3).fill(null);
 var current_camera = 0;
 var wall, floor, painting, sculpture, support;
 var scene, renderer, geometry, material, mesh;
+
+var globalLight, spotLight = new Array(4).fill(null);
 
 var aspectRatio = window.innerHeight / window.innerWidth;
 var widthHeight = new THREE.Vector2(window.innerWidth, window.innerHeight);
@@ -28,7 +30,11 @@ var KeyboardState = {
     87: false //W
 };
 
-var wasPressed = {};
+var wasPressed = {
+    69: false, //E
+    81: false, //Q
+    87: false //W
+};
 
 // ------ INPUT DETECTION ------ //
 
@@ -41,10 +47,10 @@ class Floor extends THREE.Object3D {
     constructor(x, y, z) {
         super();
         this.name = "Floor";
-        this.material = new THREE.MeshBasicMaterial({
+        this.material = {
             wireframe: false,
             color: 0x0f0096
-        });
+        };
         this.height = 5;
         this.width = 400;
         this.depth = 80;
@@ -53,14 +59,13 @@ class Floor extends THREE.Object3D {
         this.position.y = y;
         this.position.z = z;
 
-        addRectangularPrism(
-            this,
+        this.geometry = new THREE.BoxGeometry(
             this.width,
             this.height,
-            this.depth,
-            this.material,
-            false
+            this.depth
         );
+        this.mesh = new Mesh(this.geometry, this.material);
+        this.add(this.mesh)
     }
 }
 
@@ -68,10 +73,10 @@ class Wall extends THREE.Object3D {
     constructor(x, y, z) {
         super();
         this.name = "Wall";
-        this.material = new THREE.MeshBasicMaterial({
+        this.material = {
             wireframe: false,
             color: 0xf0e895
-        });
+        };
         this.height = 150;
         this.width = 400;
         this.depth = 3;
@@ -80,13 +85,14 @@ class Wall extends THREE.Object3D {
         this.position.y = y;
         this.position.z = z;
 
-        addRectangularPrism(
-            this,
+
+        this.geometry = new THREE.BoxGeometry(
             this.width,
             this.height,
-            this.depth,
-            this.material,
+            this.depth
         );
+        this.mesh = new Mesh(this.geometry, this.material);
+        this.add(this.mesh)
     }
 }
 
@@ -132,7 +138,6 @@ class Painting extends THREE.Object3D {
 
         this.frameMesh = new Mesh(this.frameGeometry, this.frameMaterial);
         this.backgroundMesh = new Mesh(this.backgroundGeometry, this.backgroundMaterial);
-
         this.add(this.backgroundMesh)
         this.add(this.frameMesh)
 
@@ -159,49 +164,51 @@ class Sculpture extends THREE.Object3D {
 
         this.geometry = new THREE.Geometry();
         this.geometry.vertices.push( // With deformations (remove to see true icosahedron)
-            new THREE.Vector3(0, this.sculpSize+1, this.sculpSize*PHI),
-            new THREE.Vector3(0, -this.sculpSize-1, this.sculpSize*PHI-2),
-            new THREE.Vector3(0, -this.sculpSize, -this.sculpSize*PHI+1),
-            new THREE.Vector3(0, this.sculpSize, -this.sculpSize*PHI-2),
+            new THREE.Vector3(0, this.sculpSize + 1, this.sculpSize * PHI),
+            new THREE.Vector3(0, -this.sculpSize - 1, this.sculpSize * PHI - 2),
+            new THREE.Vector3(0, -this.sculpSize, -this.sculpSize * PHI + 1),
+            new THREE.Vector3(0, this.sculpSize, -this.sculpSize * PHI - 2),
 
-            new THREE.Vector3(this.sculpSize+2, this.sculpSize*PHI+2, 0),
-            new THREE.Vector3(-this.sculpSize+2, this.sculpSize*PHI-1, 0),
-            new THREE.Vector3(-this.sculpSize-2, -this.sculpSize*PHI, 0),
-            new THREE.Vector3(this.sculpSize+1, -this.sculpSize*PHI, 0),
+            new THREE.Vector3(this.sculpSize + 2, this.sculpSize * PHI + 2, 0),
+            new THREE.Vector3(-this.sculpSize + 2, this.sculpSize * PHI - 1, 0),
+            new THREE.Vector3(-this.sculpSize - 2, -this.sculpSize * PHI, 0),
+            new THREE.Vector3(this.sculpSize + 1, -this.sculpSize * PHI, 0),
 
-            new THREE.Vector3(this.sculpSize*PHI+1, 0, this.sculpSize+2),
-            new THREE.Vector3(-this.sculpSize*PHI+2, 0, this.sculpSize),
-            new THREE.Vector3(-this.sculpSize*PHI, 0, -this.sculpSize+3),
-            new THREE.Vector3(this.sculpSize*PHI, 0, -this.sculpSize-2),
-        );        
-        
+            new THREE.Vector3(this.sculpSize * PHI + 1, 0, this.sculpSize + 2),
+            new THREE.Vector3(-this.sculpSize * PHI + 2, 0, this.sculpSize),
+            new THREE.Vector3(-this.sculpSize * PHI, 0, -this.sculpSize + 3),
+            new THREE.Vector3(this.sculpSize * PHI, 0, -this.sculpSize - 2),
+        );
+
         this.geometry.faces.push( // Order of vertices matters!! (counter-clockwise)
-            new THREE.Face3(1,8,0),
-            new THREE.Face3(1,0,9),
-            new THREE.Face3(1,9,6),
-            new THREE.Face3(1,6,7),
-            new THREE.Face3(1,7,8),
+            new THREE.Face3(1, 8, 0),
+            new THREE.Face3(1, 0, 9),
+            new THREE.Face3(1, 9, 6),
+            new THREE.Face3(1, 6, 7),
+            new THREE.Face3(1, 7, 8),
 
-            new THREE.Face3(11,4,8),
-            new THREE.Face3(8,4,0),
-            new THREE.Face3(4,5,0),
-            new THREE.Face3(0,5,9),
-            new THREE.Face3(5,10,9),
+            new THREE.Face3(11, 4, 8),
+            new THREE.Face3(8, 4, 0),
+            new THREE.Face3(4, 5, 0),
+            new THREE.Face3(0, 5, 9),
+            new THREE.Face3(5, 10, 9),
 
-            new THREE.Face3(9,10,6),
-            new THREE.Face3(10,2,6),
-            new THREE.Face3(6,2,7),
-            new THREE.Face3(7,2,11),
-            new THREE.Face3(7,11,8),
+            new THREE.Face3(9, 10, 6),
+            new THREE.Face3(10, 2, 6),
+            new THREE.Face3(6, 2, 7),
+            new THREE.Face3(7, 2, 11),
+            new THREE.Face3(7, 11, 8),
 
-            new THREE.Face3(3,10,5),
-            new THREE.Face3(3,5,4),
-            new THREE.Face3(3,4,11),
-            new THREE.Face3(3,11,2),
-            new THREE.Face3(3,2,10),
+            new THREE.Face3(3, 10, 5),
+            new THREE.Face3(3, 5, 4),
+            new THREE.Face3(3, 4, 11),
+            new THREE.Face3(3, 11, 2),
+            new THREE.Face3(3, 2, 10),
         );
 
         this.mesh = new Mesh(this.geometry, this.material);
+        this.geometry.computeFaceNormals();
+        this.geometry.computeVertexNormals();
         this.add(this.mesh);
     }
 }
@@ -249,21 +256,14 @@ class Support extends THREE.Object3D {
 class Mesh extends THREE.Mesh {
     constructor(geometry, materialArguments) {
         var materials = [new THREE.MeshBasicMaterial(materialArguments), new THREE.MeshLambertMaterial(materialArguments), new THREE.MeshPhongMaterial(materialArguments)]
-        super(geometry, materials[0])
+        super(geometry, materials[2])
+
         this.phongMaterial = materials[2]
         this.lambertMaterial = materials[1]
         this.basicMaterial = materials[0]
-        //return this;
     }
 }
 
-// ------ GEOMETRIES ------ //
-
-function addRectangularPrism(obj, dimX, dimY, dimZ, material) {
-    geometry = new THREE.BoxGeometry(dimX, dimY, dimZ);
-    mesh = new THREE.Mesh(geometry, material);
-    obj.add(mesh);
-}
 
 function addLines(obj, lineHeight, Width, Height) {
     //Horizontal Lines
@@ -273,21 +273,21 @@ function addLines(obj, lineHeight, Width, Height) {
     let verticalPos = (Width - 11) / 2,
         verticalOffset = Width / 11;
 
-    const lineMaterial = new THREE.MeshBasicMaterial({
+    const lineMaterial = {
         wireframe: false,
         color: 0xadadad
-    });
+    };
 
     for (let i = 0; i < 8; i++) {
         geometry = new THREE.BoxGeometry(Width, lineHeight, 1);
-        mesh = new THREE.Mesh(geometry, lineMaterial);
+        mesh = new Mesh(geometry, lineMaterial);
         mesh.position.y = horizontalPos
         obj.add(mesh);
         horizontalPos -= horizontalOffset
     }
     for (let j = 0; j < 11; j++) {
         geometry = new THREE.BoxGeometry(lineHeight, Height, 1);
-        mesh = new THREE.Mesh(geometry, lineMaterial);
+        mesh = new Mesh(geometry, lineMaterial);
         mesh.position.x = verticalPos
         obj.add(mesh);
         verticalPos -= verticalOffset
@@ -302,15 +302,15 @@ function addDots(obj, Width, Height) {
     let verticalPos = (Width - 11) / 2,
         verticalOffset = Width / 11;
 
-    const dotMaterial = new THREE.MeshBasicMaterial({
+    const dotMaterial = {
         wireframe: false,
         color: 0xffffff
-    });
+    };
 
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 11; j++) {
             geometry = new THREE.CylinderGeometry(1.5, 1.5, 1, 15);
-            mesh = new THREE.Mesh(geometry, dotMaterial);
+            mesh = new Mesh(geometry, dotMaterial);
             mesh.position.x = verticalPos
             mesh.position.y = horizontalPos
             mesh.rotateX(Math.PI / 2);
@@ -370,7 +370,7 @@ function init() {
     createScene();
     createCamera1();
     createCamera2();
-
+    createGlobalLight();
 
     window.addEventListener("resize", onResize);
 }
@@ -389,12 +389,14 @@ function onResize() {
         camera[1].top = (frustumSize * aspectRatio) / 2;
         camera[1].bottom = (-frustumSize * aspectRatio) / 2;
         camera[1].updateProjectionMatrix();
-
-
-
     }
 }
 
+function createGlobalLight() {
+    globalLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    globalLight.position.set(0, 10, 10);
+    scene.add(globalLight);
+}
 
 function createScene() {
     scene = new THREE.Scene();
@@ -403,7 +405,7 @@ function createScene() {
     wall = new Wall(0, 0, -40);
     floor = new Floor(0, -75, 0);
     support = new Support(75, -70, 0);
-    sculpture = new Sculpture(73, -36+10*PHI, 20);
+    sculpture = new Sculpture(73, -36 + 10 * PHI, 20);
     painting = new Painting(-80, 0, 0);
 
     scene.add(wall);
@@ -443,17 +445,46 @@ function handleInput() {
         //6
         current_camera = 1;
     }
-    if (KeyboardState[69]) {
+
+
+    if (KeyboardState[69] && !wasPressed[69]) {
         //E
+        scene.traverse(function (node) {
+            if (node instanceof Mesh && node.material != node.basicMaterial) {
+                if (node.material == node.phongMaterial)
+                    node.material = node.lambertMaterial
+                else
+                    node.material = node.phongMaterial
 
+            }
+        });
+        wasPressed[69] = true;
+    } else if (!KeyboardState[69]) {
+        wasPressed[69] = false;
     }
-    if (KeyboardState[81]) {
+
+    if (KeyboardState[81] && !wasPressed[81]) {
         //Q
-
+        globalLight.visible = !globalLight.visible
+        wasPressed[81] = true;
+    } else if (!KeyboardState[81]) {
+        wasPressed[81] = false;
     }
-    if (KeyboardState[87]) {
-        //W
 
+    if (KeyboardState[87] && !wasPressed[87]) {
+        //W
+        wasPressed[87] = true;
+        scene.traverse(function (node) {
+            if (node instanceof Mesh) {
+                if (node.material == node.basicMaterial)
+                    node.material = node.phongMaterial
+                else
+                    node.material = node.basicMaterial
+
+            }
+        });
+    } else if (!KeyboardState[87]) {
+        wasPressed[87] = false;
     }
 }
 
