@@ -6,17 +6,18 @@ const PHI = (1 + Math.sqrt(5)) / 2;
 
 var camera = new Array(3).fill(null);
 var current_camera = 0;
+
 var wall, floor, painting, sculpture, support;
+var spotlight = new Array(4).fill(null);
 var scene, renderer, geometry, material, mesh;
 
-var globalLight, spotLight = new Array(4).fill(null);
+var globalLight, light = new Array(4).fill(null);
 
 var aspectRatio = window.innerHeight / window.innerWidth;
 var widthHeight = new THREE.Vector2(window.innerWidth, window.innerHeight);
 var frustumSize = 250;
 
 var currentTime, previousTime, timeInterval;
-
 
 var KeyboardState = {
     49: false, //1
@@ -36,12 +37,15 @@ var wasPressed = {
     87: false //W
 };
 
+
 // ------ INPUT DETECTION ------ //
 
 onkeydown = onkeyup = function (e) {
     KeyboardState[e.keyCode] = e.type == "keydown";
 };
 
+
+// ------ OBJECTS ------ //
 
 class Floor extends THREE.Object3D {
     constructor(x, y, z) {
@@ -160,6 +164,7 @@ class Sculpture extends THREE.Object3D {
         this.position.y = y;
         this.position.z = z;
 
+        //sculpture scale
         this.sculpSize = 10;
 
         this.geometry = new THREE.Geometry();
@@ -181,29 +186,29 @@ class Sculpture extends THREE.Object3D {
         );
 
         this.geometry.faces.push( // Order of vertices matters!! (counter-clockwise)
-            new THREE.Face3(1, 8, 0),
-            new THREE.Face3(1, 0, 9),
-            new THREE.Face3(1, 9, 6),
-            new THREE.Face3(1, 6, 7),
-            new THREE.Face3(1, 7, 8),
+            new THREE.Face3(1,8,0),
+            new THREE.Face3(1,0,9),
+            new THREE.Face3(1,9,6),
+            new THREE.Face3(1,6,7),
+            new THREE.Face3(1,7,8),
 
-            new THREE.Face3(11, 4, 8),
-            new THREE.Face3(8, 4, 0),
-            new THREE.Face3(4, 5, 0),
-            new THREE.Face3(0, 5, 9),
-            new THREE.Face3(5, 10, 9),
+            new THREE.Face3(11,4,8),
+            new THREE.Face3(8,4,0),
+            new THREE.Face3(4,5,0),
+            new THREE.Face3(0,5,9),
+            new THREE.Face3(5,10,9),
 
-            new THREE.Face3(9, 10, 6),
-            new THREE.Face3(10, 2, 6),
-            new THREE.Face3(6, 2, 7),
-            new THREE.Face3(7, 2, 11),
-            new THREE.Face3(7, 11, 8),
+            new THREE.Face3(9,10,6),
+            new THREE.Face3(10,2,6),
+            new THREE.Face3(6,2,7),
+            new THREE.Face3(7,2,11),
+            new THREE.Face3(7,11,8),
 
-            new THREE.Face3(3, 10, 5),
-            new THREE.Face3(3, 5, 4),
-            new THREE.Face3(3, 4, 11),
-            new THREE.Face3(3, 11, 2),
-            new THREE.Face3(3, 2, 10),
+            new THREE.Face3(3,10,5),
+            new THREE.Face3(3,5,4),
+            new THREE.Face3(3,4,11),
+            new THREE.Face3(3,11,2),
+            new THREE.Face3(3,2,10),
         );
 
         this.mesh = new Mesh(this.geometry, this.material);
@@ -252,10 +257,48 @@ class Support extends THREE.Object3D {
     }
 }
 
+class Spotlight extends THREE.Object3D {
+    constructor(x,y,z) {
+        super();
+        this.name = "Spotlight";
+        this.material = {
+            wireframe: false,
+            color: 0xc2c2c2
+        };
+        this.lightmat = {
+            wireframe: false,
+            color: 0xffffff
+        }
+
+        this.position.x = x;
+        this.position.y = y;
+        this.position.z = z;
+
+        this.supportGeo = new THREE.CylinderGeometry(1, 1, 4, 30);
+        this.coneGeo = new THREE.CylinderGeometry(1.5, 2, 5, 30);
+        this.lightbulbGeo = new THREE.SphereGeometry(2.2, 30, 30);
+
+        this.supportMesh = new Mesh(this.supportGeo, this.material);
+        this.coneMesh = new Mesh(this.coneGeo, this.material);
+        this.lightbulbMesh = new Mesh(this.lightbulbGeo, this.lightmat);
+
+        this.supportMesh.rotateX(Math.PI/2);
+        this.coneMesh.position.z = 1.5;
+        this.lightbulbMesh.position.z = 1.5;
+        this.lightbulbMesh.position.y = -2.5;
+
+
+        this.add(this.supportMesh);
+        this.add(this.coneMesh);
+        this.add(this.lightbulbMesh);
+    }
+}
 
 class Mesh extends THREE.Mesh {
     constructor(geometry, materialArguments) {
-        var materials = [new THREE.MeshBasicMaterial(materialArguments), new THREE.MeshLambertMaterial(materialArguments), new THREE.MeshPhongMaterial(materialArguments)]
+        var materials = [new THREE.MeshBasicMaterial(materialArguments), 
+                         new THREE.MeshLambertMaterial(materialArguments), 
+                         new THREE.MeshPhongMaterial(materialArguments)]
         super(geometry, materials[2])
 
         this.phongMaterial = materials[2]
@@ -265,6 +308,50 @@ class Mesh extends THREE.Mesh {
 }
 
 
+// ------ CAMERAS ------ //
+
+
+function createCamera1() {
+    camera[0] = new THREE.PerspectiveCamera(100,
+        window.innerWidth / window.innerHeight, 1, 1000);
+    camera[0].position.x = 0;
+    camera[0].position.y = 0;
+    camera[0].position.z = 150;
+    camera[0].lookAt(scene.position);
+}
+
+
+/* FOR TESTING
+function createCamera1() {
+    camera[0] = new THREE.PerspectiveCamera(100,
+        window.innerWidth / window.innerHeight, 1, 1000);
+    camera[0].position.x = -150;
+    camera[0].position.y = 25;
+    camera[0].position.z = -38;
+    camera[0].lookAt(painting.position);
+}
+*/
+
+
+function createCamera2() {
+    camera[1] = new THREE.OrthographicCamera(
+        frustumSize / -2 - 75,
+        frustumSize / 2 - 75,
+        (frustumSize * aspectRatio) / 2,
+        (frustumSize * aspectRatio) / -2,
+        -100,
+        100
+    );
+    camera[1].position.x = 0;
+    camera[1].position.y = 0;
+    camera[1].position.z = 0;
+    camera[1].lookAt(scene.position);
+}
+
+
+// ------ FUNCTIONS ------ //
+
+//generates the lines of the paiting
 function addLines(obj, lineHeight, Width, Height) {
     //Horizontal Lines
     let horizontalPos = (Height - 9) / 2,
@@ -294,6 +381,7 @@ function addLines(obj, lineHeight, Width, Height) {
     }
 }
 
+//generates the dots of the painting
 function addDots(obj, Width, Height) {
     //Horizontal Position
     let horizontalPos = (Height - 9) / 2,
@@ -323,56 +411,10 @@ function addDots(obj, Width, Height) {
 
 }
 
-function createCamera1() {
-    camera[0] = new THREE.PerspectiveCamera(100,
-        window.innerWidth / window.innerHeight, 1, 1000);
-    camera[0].position.x = 40;
-    camera[0].position.y = 0;
-    camera[0].position.z = 150;
-    camera[0].lookAt(scene.position);
-
-}
-
-/* FOR TESTING
-function createCamera1() {
-    camera[0] = new THREE.PerspectiveCamera(100,
-        window.innerWidth / window.innerHeight, 1, 1000);
-    camera[0].position.x = 70;
-    camera[0].position.y = -30;
-    camera[0].position.z = 100;
-    camera[0].lookAt(support.position);
-}
-*/
-
-
-function createCamera2() {
-
-    camera[1] = new THREE.OrthographicCamera(
-        frustumSize / -2 - 75,
-        frustumSize / 2 - 75,
-        (frustumSize * aspectRatio) / 2,
-        (frustumSize * aspectRatio) / -2,
-        -100,
-        100
-    );
-    camera[1].position.x = 0;
-    camera[1].position.y = 0;
-    camera[1].position.z = 0;
-    camera[1].lookAt(scene.position);
-}
-
-function init() {
-    renderer = new THREE.WebGLRenderer({
-        antialias: true
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-    createScene();
-    createCamera1();
-    createCamera2();
-    createGlobalLight();
-
-    window.addEventListener("resize", onResize);
+function createGlobalLight() {
+    globalLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    globalLight.position.set(0, 10, 10);
+    scene.add(globalLight);
 }
 
 function onResize() {
@@ -392,12 +434,6 @@ function onResize() {
     }
 }
 
-function createGlobalLight() {
-    globalLight = new THREE.DirectionalLight(0xffffff, 0.3);
-    globalLight.position.set(0, 10, 10);
-    scene.add(globalLight);
-}
-
 function createScene() {
     scene = new THREE.Scene();
     scene.add(new THREE.AxesHelper(50));
@@ -405,37 +441,72 @@ function createScene() {
     wall = new Wall(0, 0, -40);
     floor = new Floor(0, -75, 0);
     support = new Support(75, -70, 0);
-    sculpture = new Sculpture(73, -36 + 10 * PHI, 20);
-    painting = new Painting(-80, 0, 0);
+    sculpture = new Sculpture(70, -36 + 10 * PHI, 20);
+    painting = new Painting(-80, 0, -37.5);
+
+    spotlight[0] = new Spotlight(-110, 50, -36.5);
+    spotlight[1] = new Spotlight(-50, 50, -36.5);
+    spotlight[2] = new Spotlight(50, 50, -36.5);
+    spotlight[3] = new Spotlight(120, 50, -36.5);
+    
+    spotlight[2].rotateZ(0.3);
+    spotlight[3].rotateZ(-0.3);
 
     scene.add(wall);
     scene.add(floor);
     scene.add(support);
     scene.add(sculpture);
     scene.add(painting);
+    scene.add(spotlight[0]);
+    scene.add(spotlight[1]);
+    scene.add(spotlight[2]);
+    scene.add(spotlight[3]);
+}
+
+function init() {
+    renderer = new THREE.WebGLRenderer({
+        antialias: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    createScene();
+    createCamera1();
+    createCamera2();
+    createGlobalLight();
+
+    window.addEventListener("resize", onResize);
 }
 
 function render() {
     renderer.render(scene, camera[current_camera]);
 }
 
+function update() {
+    currentTime = new Date().getTime();
+    timeInterval = currentTime - previousTime;
+    previousTime = currentTime;
+    handleInput();
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    update();
+    render();
+}
+
 //handles keypresses
 function handleInput() {
     if (KeyboardState[49]) {
         //1
-
     }
     if (KeyboardState[50]) {
         //2
-
     }
     if (KeyboardState[51]) {
         //3
-
     }
     if (KeyboardState[52]) {
         //4
-
     }
     if (KeyboardState[53]) {
         //5
@@ -480,24 +551,9 @@ function handleInput() {
                     node.material = node.phongMaterial
                 else
                     node.material = node.basicMaterial
-
             }
         });
     } else if (!KeyboardState[87]) {
         wasPressed[87] = false;
     }
-}
-
-function update() {
-    currentTime = new Date().getTime();
-    timeInterval = currentTime - previousTime;
-    previousTime = currentTime;
-
-    handleInput();
-}
-
-function animate() {
-    requestAnimationFrame(animate);
-    update();
-    render();
 }
