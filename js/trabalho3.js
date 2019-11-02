@@ -11,7 +11,9 @@ var wall, floor, painting, sculpture, support;
 var spotlight = new Array(4).fill(null);
 var scene, renderer, geometry, material, mesh;
 
-var globalLight, light = new Array(4).fill(null);
+var globalLight;
+var light = new Array(4).fill(null);
+var lightTarget = new Array(4).fill(null);
 
 var aspectRatio = window.innerHeight / window.innerWidth;
 var widthHeight = new THREE.Vector2(window.innerWidth, window.innerHeight);
@@ -32,6 +34,12 @@ var KeyboardState = {
 };
 
 var wasPressed = {
+    49: false, //1
+    50: false, //2
+    51: false, //3
+    52: false, //4
+    53: false, //5
+    54: false, //6
     69: false, //E
     81: false, //Q
     87: false //W
@@ -212,8 +220,9 @@ class Sculpture extends THREE.Object3D {
         );
 
         this.mesh = new Mesh(this.geometry, this.material);
+        this.mesh.phongMaterial.shininess = 200;
         this.geometry.computeFaceNormals();
-        this.geometry.computeVertexNormals();
+        //this.geometry.computeVertexNormals();  ???
         this.add(this.mesh);
     }
 }
@@ -291,6 +300,27 @@ class Spotlight extends THREE.Object3D {
         this.add(this.supportMesh);
         this.add(this.coneMesh);
         this.add(this.lightbulbMesh);
+    }
+}
+
+class LightTarget extends THREE.Object3D {
+    constructor(x,y,z) {
+        super();
+        this.name = "LightTarget";
+        this.material = {
+            visible: false,
+            wireframe: false,
+            color: 0xffffff
+        };
+
+        this.position.x = x;
+        this.position.y = y;
+        this.position.z = z;
+
+        this.geo = new THREE.BoxGeometry(1,1,1);
+        this.mesh = new Mesh(this.geo, this.material);
+
+        this.add(this.mesh);
     }
 }
 
@@ -417,6 +447,25 @@ function createGlobalLight() {
     scene.add(globalLight);
 }
 
+function createLightTargets() {
+    lightTarget[0] = new LightTarget(-110, -74, -33);
+    lightTarget[1] = new LightTarget(-50, -74, -33);
+    lightTarget[2] = new LightTarget(75,-70,0);
+    lightTarget[3] = new LightTarget(100,-70,0);
+
+    scene.add(lightTarget[0]);
+    scene.add(lightTarget[1]);
+    scene.add(lightTarget[2]);
+    scene.add(lightTarget[3]);
+}
+
+function createLight(x,y,z,i) {
+    light[i] = new THREE.SpotLight( 0xffffff, 5, 100, Math.PI/4, 0, 1);
+    light[i].position.set(x,y,z);
+    light[i].target = lightTarget[i];
+    scene.add(light[i]);
+}
+
 function onResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     aspectRatio = window.innerHeight / window.innerWidth;
@@ -444,23 +493,31 @@ function createScene() {
     sculpture = new Sculpture(70, -36 + 10 * PHI, 20);
     painting = new Painting(-80, 0, -37.5);
 
-    spotlight[0] = new Spotlight(-110, 50, -36.5);
-    spotlight[1] = new Spotlight(-50, 50, -36.5);
-    spotlight[2] = new Spotlight(50, 50, -36.5);
-    spotlight[3] = new Spotlight(120, 50, -36.5);
-    
-    spotlight[2].rotateZ(0.3);
-    spotlight[3].rotateZ(-0.3);
-
     scene.add(wall);
     scene.add(floor);
     scene.add(support);
     scene.add(sculpture);
     scene.add(painting);
+
+    createLightTargets();
+
+    spotlight[0] = new Spotlight(-110, 50, -36.5);
+    spotlight[1] = new Spotlight(-50, 50, -36.5);
+    spotlight[2] = new Spotlight(50, 50, -36.5);
+    spotlight[3] = new Spotlight(130, 50, -36.5);
+
     scene.add(spotlight[0]);
     scene.add(spotlight[1]);
     scene.add(spotlight[2]);
     scene.add(spotlight[3]);
+    
+    spotlight[2].rotateZ(0.3);
+    spotlight[3].rotateZ(-0.3);
+
+    createLight(-110,52,-30,0);
+    createLight(-50,52,-30,1);
+    createLight(50,55,-30,2);
+    createLight(130,55,-30,3);
 }
 
 function init() {
@@ -496,27 +553,53 @@ function animate() {
 
 //handles keypresses
 function handleInput() {
-    if (KeyboardState[49]) {
+    if (KeyboardState[49] && !wasPressed[49]) {
         //1
-    }
-    if (KeyboardState[50]) {
-        //2
-    }
-    if (KeyboardState[51]) {
-        //3
-    }
-    if (KeyboardState[52]) {
-        //4
-    }
-    if (KeyboardState[53]) {
-        //5
-        current_camera = 0;
-    }
-    if (KeyboardState[54]) {
-        //6
-        current_camera = 1;
+        light[0].visible = !light[0].visible;
+        wasPressed[49] = true;
+    } else if (!KeyboardState[49] && wasPressed[49]) {
+        wasPressed[49] = false;
     }
 
+    if (KeyboardState[50] && !wasPressed[50]) {
+        //2
+        light[1].visible = !light[1].visible;
+        wasPressed[50] = true;
+    } else if (!KeyboardState[50] && wasPressed[50]) {
+        wasPressed[50] = false;
+    }
+
+    if (KeyboardState[51] && !wasPressed[51]) {
+        //3
+        light[2].visible = !light[2].visible;
+        wasPressed[51] = true;
+    } else if (!KeyboardState[51] && wasPressed[51]) {
+        wasPressed[51] = false;
+    }
+
+    if (KeyboardState[52] && !wasPressed[52]) {
+        //4
+        light[3].visible = !light[3].visible;
+        wasPressed[52] = true;
+    } else if (!KeyboardState[52] && wasPressed[52]) {
+        wasPressed[52] = false;
+    }
+
+    if (KeyboardState[53] && !wasPressed[53]) {
+        //5
+        current_camera = 0;
+        wasPressed[53] = true;
+    } else if (!KeyboardState[53] && wasPressed[53]) {
+        wasPressed[53] = false;
+    }
+
+    if (KeyboardState[54] && !wasPressed[54]) {
+        //6
+        current_camera = 1;
+        wasPressed[54] = true;
+    } else if (!KeyboardState[54] && wasPressed[54]) {
+        wasPressed[54] = false;
+    }
 
     if (KeyboardState[69] && !wasPressed[69]) {
         //E
@@ -530,7 +613,7 @@ function handleInput() {
             }
         });
         wasPressed[69] = true;
-    } else if (!KeyboardState[69]) {
+    } else if (!KeyboardState[69] && wasPressed[69]) {
         wasPressed[69] = false;
     }
 
@@ -538,7 +621,7 @@ function handleInput() {
         //Q
         globalLight.visible = !globalLight.visible
         wasPressed[81] = true;
-    } else if (!KeyboardState[81]) {
+    } else if (!KeyboardState[81] && wasPressed[81]) {
         wasPressed[81] = false;
     }
 
@@ -553,7 +636,7 @@ function handleInput() {
                     node.material = node.basicMaterial
             }
         });
-    } else if (!KeyboardState[87]) {
+    } else if (!KeyboardState[87] && wasPressed[87]) {
         wasPressed[87] = false;
     }
 }
