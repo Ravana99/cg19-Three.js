@@ -52,7 +52,6 @@ onkeydown = onkeyup = function (e) {
     KeyboardState[e.keyCode] = e.type == "keydown";
 };
 
-
 // ------ OBJECTS ------ //
 
 class Floor extends THREE.Object3D {
@@ -77,6 +76,7 @@ class Floor extends THREE.Object3D {
             this.depth
         );
         this.mesh = new Mesh(this.geometry, this.material);
+        this.mesh.phongMaterial.shininess = 200;
         this.add(this.mesh)
     }
 }
@@ -104,6 +104,7 @@ class Wall extends THREE.Object3D {
             this.depth
         );
         this.mesh = new Mesh(this.geometry, this.material);
+        this.mesh.phongMaterial.shininess = 50;
         this.add(this.mesh)
     }
 }
@@ -145,11 +146,13 @@ class Painting extends THREE.Object3D {
         this.frameGeometry = new THREE.BoxGeometry(
             this.width + 10,
             this.height + 10,
-            this.depth
+            this.depth - 0.01 // "zindex"
         );
 
         this.frameMesh = new Mesh(this.frameGeometry, this.frameMaterial);
+        this.frameMesh.phongMaterial.shininess = 10;
         this.backgroundMesh = new Mesh(this.backgroundGeometry, this.backgroundMaterial);
+        this.backgroundMesh.phongMaterial.shininess = 100;
         this.add(this.backgroundMesh)
         this.add(this.frameMesh)
 
@@ -176,7 +179,7 @@ class Sculpture extends THREE.Object3D {
         this.sculpSize = 10;
 
         this.geometry = new THREE.Geometry();
-        this.geometry.vertices.push( // With deformations (remove to see true icosahedron)
+        this.geometry.vertices.push( // With deformations (remove +1, +2, -1, etc. to see true icosahedron)
             new THREE.Vector3(0, this.sculpSize + 1, this.sculpSize * PHI),
             new THREE.Vector3(0, -this.sculpSize - 1, this.sculpSize * PHI - 2),
             new THREE.Vector3(0, -this.sculpSize, -this.sculpSize * PHI + 1),
@@ -220,9 +223,9 @@ class Sculpture extends THREE.Object3D {
         );
 
         this.mesh = new Mesh(this.geometry, this.material);
-        this.mesh.phongMaterial.shininess = 200;
+        this.mesh.phongMaterial.shininess = 500;
         this.geometry.computeFaceNormals();
-        //this.geometry.computeVertexNormals();  ???
+        //this.geometry.computeVertexNormals();
         this.add(this.mesh);
     }
 }
@@ -253,12 +256,15 @@ class Support extends THREE.Object3D {
         );
 
         this.bottomMesh = new Mesh(this.bottomGeometry, this.material);
+        this.bottomMesh.phongMaterial.shininess = 400;
 
         this.middleMesh = new Mesh(this.middleGeometry, this.material);
         this.middleMesh.position.y = 15
+        this.middleMesh.phongMaterial.shininess = 400;
 
         this.topMesh = new Mesh(this.topGeometry, this.material);
         this.topMesh.position.y = 30
+        this.topMesh.phongMaterial.shininess = 400;
 
         this.add(this.bottomMesh)
         this.add(this.middleMesh)
@@ -276,7 +282,7 @@ class Spotlight extends THREE.Object3D {
         };
         this.lightmat = {
             wireframe: false,
-            color: 0xffffff
+            color: 0xffffff,
         }
 
         this.position.x = x;
@@ -288,8 +294,14 @@ class Spotlight extends THREE.Object3D {
         this.lightbulbGeo = new THREE.SphereGeometry(2.2, 30, 30);
 
         this.supportMesh = new Mesh(this.supportGeo, this.material);
+        this.supportMesh.phongMaterial.shininess = 500;
         this.coneMesh = new Mesh(this.coneGeo, this.material);
+        this.coneMesh.phongMaterial.shininess = 500;
         this.lightbulbMesh = new Mesh(this.lightbulbGeo, this.lightmat);
+        this.lightbulbMesh.phongMaterial.shininess = 500;
+        this.lightbulbMesh.basicMaterial.transparent = true;
+        this.lightbulbMesh.lambertMaterial.transparent = true;
+        this.lightbulbMesh.phongMaterial.transparent = true;
 
         this.supportMesh.rotateX(Math.PI/2);
         this.coneMesh.position.z = 1.5;
@@ -329,11 +341,11 @@ class Mesh extends THREE.Mesh {
         var materials = [new THREE.MeshBasicMaterial(materialArguments), 
                          new THREE.MeshLambertMaterial(materialArguments), 
                          new THREE.MeshPhongMaterial(materialArguments)]
-        super(geometry, materials[2])
+        super(geometry, materials[2]);
 
-        this.phongMaterial = materials[2]
-        this.lambertMaterial = materials[1]
-        this.basicMaterial = materials[0]
+        this.phongMaterial = materials[2];
+        this.lambertMaterial = materials[1];
+        this.basicMaterial = materials[0];
     }
 }
 
@@ -345,22 +357,10 @@ function createCamera1() {
     camera[0] = new THREE.PerspectiveCamera(100,
         window.innerWidth / window.innerHeight, 1, 1000);
     camera[0].position.x = 0;
-    camera[0].position.y = 0;
+    camera[0].position.y = 40;
     camera[0].position.z = 150;
     camera[0].lookAt(scene.position);
 }
-
-
-/* FOR TESTING
-function createCamera1() {
-    camera[0] = new THREE.PerspectiveCamera(100,
-        window.innerWidth / window.innerHeight, 1, 1000);
-    camera[0].position.x = -150;
-    camera[0].position.y = 25;
-    camera[0].position.z = -38;
-    camera[0].lookAt(painting.position);
-}
-*/
 
 
 function createCamera2() {
@@ -375,13 +375,12 @@ function createCamera2() {
     camera[1].position.x = 0;
     camera[1].position.y = 0;
     camera[1].position.z = 0;
-    camera[1].lookAt(scene.position);
 }
 
 
 // ------ FUNCTIONS ------ //
 
-//generates the lines of the paiting
+//generates the lines of the painting
 function addLines(obj, lineHeight, Width, Height) {
     //Horizontal Lines
     let horizontalPos = (Height - 9) / 2,
@@ -398,14 +397,18 @@ function addLines(obj, lineHeight, Width, Height) {
     for (let i = 0; i < 8; i++) {
         geometry = new THREE.BoxGeometry(Width, lineHeight, 1);
         mesh = new Mesh(geometry, lineMaterial);
+        mesh.phongMaterial.shininess = 100;
         mesh.position.y = horizontalPos
+        mesh.position.z += 0.01 // "zindex"
         obj.add(mesh);
         horizontalPos -= horizontalOffset
     }
     for (let j = 0; j < 11; j++) {
         geometry = new THREE.BoxGeometry(lineHeight, Height, 1);
         mesh = new Mesh(geometry, lineMaterial);
+        mesh.phongMaterial.shininess = 100;
         mesh.position.x = verticalPos
+        mesh.position.z += 0.01 // "zindex"
         obj.add(mesh);
         verticalPos -= verticalOffset
     }
@@ -431,6 +434,7 @@ function addDots(obj, Width, Height) {
             mesh = new Mesh(geometry, dotMaterial);
             mesh.position.x = verticalPos
             mesh.position.y = horizontalPos
+            mesh.position.z += 0.02 // "zindex"
             mesh.rotateX(Math.PI / 2);
             obj.add(mesh);
             verticalPos -= verticalOffset
@@ -442,7 +446,7 @@ function addDots(obj, Width, Height) {
 }
 
 function createGlobalLight() {
-    globalLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    globalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     globalLight.position.set(0, 10, 10);
     scene.add(globalLight);
 }
@@ -475,8 +479,8 @@ function onResize() {
         camera[0].aspect = widthHeight.x / widthHeight.y;
         camera[0].updateProjectionMatrix();
 
-        camera[1].left = frustumSize / -2;
-        camera[1].right = frustumSize / 2;
+        camera[1].left = frustumSize / -2 - 75;
+        camera[1].right = frustumSize / 2 - 75;
         camera[1].top = (frustumSize * aspectRatio) / 2;
         camera[1].bottom = (-frustumSize * aspectRatio) / 2;
         camera[1].updateProjectionMatrix();
