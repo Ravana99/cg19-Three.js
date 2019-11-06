@@ -73,7 +73,10 @@ class Floor extends THREE.Object3D {
         this.geometry = new THREE.BoxGeometry(
             this.width,
             this.height,
-            this.depth
+            this.depth,
+            100,
+            10,
+            100
         );
         this.mesh = new Mesh(this.geometry, this.material);
         this.mesh.phongMaterial.shininess = 200;
@@ -101,7 +104,10 @@ class Wall extends THREE.Object3D {
         this.geometry = new THREE.BoxGeometry(
             this.width,
             this.height,
-            this.depth
+            this.depth,
+            150,
+            60,
+            2
         );
         this.mesh = new Mesh(this.geometry, this.material);
         this.mesh.phongMaterial.shininess = 50;
@@ -141,12 +147,18 @@ class Painting extends THREE.Object3D {
         this.backgroundGeometry = new THREE.BoxGeometry(
             this.width,
             this.height,
-            this.depth
+            this.depth,
+            40,
+            40,
+            2
         );
         this.frameGeometry = new THREE.BoxGeometry(
             this.width + 10,
             this.height + 10,
-            this.depth - 0.01 // "zindex"
+            this.depth - 0.01, // "zindex"
+            45,
+            45,
+            2
         );
 
         this.frameMesh = new Mesh(this.frameGeometry, this.frameMaterial);
@@ -225,6 +237,7 @@ class Sculpture extends THREE.Object3D {
         this.mesh = new Mesh(this.geometry, this.material);
         this.mesh.phongMaterial.shininess = 500;
         this.geometry.computeFaceNormals();
+        //this.geometry.computeFlatVertexNormals();
         //this.geometry.computeVertexNormals();
         this.add(this.mesh);
     }
@@ -395,7 +408,7 @@ function addLines(obj, lineHeight, Width, Height) {
     };
 
     for (let i = 0; i < 8; i++) {
-        geometry = new THREE.BoxGeometry(Width, lineHeight, 1);
+        geometry = new THREE.BoxGeometry(Width, lineHeight, 1, 10, 10, 1);
         mesh = new Mesh(geometry, lineMaterial);
         mesh.phongMaterial.shininess = 100;
         mesh.position.y = horizontalPos
@@ -404,7 +417,7 @@ function addLines(obj, lineHeight, Width, Height) {
         horizontalPos -= horizontalOffset
     }
     for (let j = 0; j < 11; j++) {
-        geometry = new THREE.BoxGeometry(lineHeight, Height, 1);
+        geometry = new THREE.BoxGeometry(lineHeight, Height, 1, 10, 10, 1);
         mesh = new Mesh(geometry, lineMaterial);
         mesh.phongMaterial.shininess = 100;
         mesh.position.x = verticalPos
