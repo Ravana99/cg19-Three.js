@@ -11,6 +11,8 @@ var wall, floor, painting, sculpture, support;
 var spotlight = new Array(4).fill(null);
 var scene, renderer, geometry, material, mesh;
 
+var meshes = []; //array of all meshes
+
 var globalLight;
 var light = new Array(4).fill(null);
 var lightTarget = new Array(4).fill(null);
@@ -80,7 +82,9 @@ class Floor extends THREE.Object3D {
         );
         this.mesh = new Mesh(this.geometry, this.material);
         this.mesh.phongMaterial.shininess = 200;
-        this.add(this.mesh)
+        this.mesh.phongMaterial.specular.setHex(0xaaaaaa);
+        this.add(this.mesh);
+        meshes.push(this.mesh);
     }
 }
 
@@ -111,7 +115,9 @@ class Wall extends THREE.Object3D {
         );
         this.mesh = new Mesh(this.geometry, this.material);
         this.mesh.phongMaterial.shininess = 50;
-        this.add(this.mesh)
+        this.mesh.phongMaterial.specular.setHex(0x333333);
+        this.add(this.mesh);
+        meshes.push(this.mesh);
     }
 }
 
@@ -162,11 +168,15 @@ class Painting extends THREE.Object3D {
         );
 
         this.frameMesh = new Mesh(this.frameGeometry, this.frameMaterial);
-        this.frameMesh.phongMaterial.shininess = 10;
+        this.frameMesh.phongMaterial.shininess = 0;
+        this.frameMesh.phongMaterial.specular.setHex(0x000000);
         this.backgroundMesh = new Mesh(this.backgroundGeometry, this.backgroundMaterial);
         this.backgroundMesh.phongMaterial.shininess = 100;
+        this.backgroundMesh.phongMaterial.specular.setHex(0x666666);
         this.add(this.backgroundMesh)
         this.add(this.frameMesh)
+        meshes.push(this.backgroundMesh);
+        meshes.push(this.frameMesh);
 
         addLines(this, this.lineHeight, this.width, this.height);
         addDots(this, this.width, this.height);
@@ -235,11 +245,11 @@ class Sculpture extends THREE.Object3D {
         );
 
         this.mesh = new Mesh(this.geometry, this.material);
-        this.mesh.phongMaterial.shininess = 500;
+        this.mesh.phongMaterial.shininess = 5;
+        this.mesh.phongMaterial.specular.setHex(0xffffff);
         this.geometry.computeFaceNormals();
-        //this.geometry.computeFlatVertexNormals();
-        //this.geometry.computeVertexNormals();
         this.add(this.mesh);
+        meshes.push(this.mesh);
     }
 }
 class Support extends THREE.Object3D {
@@ -270,18 +280,24 @@ class Support extends THREE.Object3D {
 
         this.bottomMesh = new Mesh(this.bottomGeometry, this.material);
         this.bottomMesh.phongMaterial.shininess = 400;
+        this.bottomMesh.phongMaterial.specular.setHex(0xeeeeee);
 
         this.middleMesh = new Mesh(this.middleGeometry, this.material);
         this.middleMesh.position.y = 15
         this.middleMesh.phongMaterial.shininess = 400;
+        this.bottomMesh.phongMaterial.specular.setHex(0xeeeeee);
 
         this.topMesh = new Mesh(this.topGeometry, this.material);
         this.topMesh.position.y = 30
         this.topMesh.phongMaterial.shininess = 400;
+        this.topMesh.phongMaterial.specular.setHex(0xeeeeee);
 
-        this.add(this.bottomMesh)
-        this.add(this.middleMesh)
-        this.add(this.topMesh)
+        this.add(this.bottomMesh);
+        this.add(this.middleMesh);
+        this.add(this.topMesh);
+        meshes.push(this.bottomMesh);
+        meshes.push(this.middleMesh);
+        meshes.push(this.topMesh);
     }
 }
 
@@ -308,10 +324,13 @@ class Spotlight extends THREE.Object3D {
 
         this.supportMesh = new Mesh(this.supportGeo, this.material);
         this.supportMesh.phongMaterial.shininess = 500;
+        this.supportMesh.phongMaterial.specular.setHex(0xffffff);
         this.coneMesh = new Mesh(this.coneGeo, this.material);
         this.coneMesh.phongMaterial.shininess = 500;
+        this.coneMesh.phongMaterial.specular.setHex(0xffffff);
         this.lightbulbMesh = new Mesh(this.lightbulbGeo, this.lightmat);
         this.lightbulbMesh.phongMaterial.shininess = 500;
+        this.lightbulbMesh.phongMaterial.specular.setHex(0xffffff);
         this.lightbulbMesh.basicMaterial.transparent = true;
         this.lightbulbMesh.lambertMaterial.transparent = true;
         this.lightbulbMesh.phongMaterial.transparent = true;
@@ -325,9 +344,13 @@ class Spotlight extends THREE.Object3D {
         this.add(this.supportMesh);
         this.add(this.coneMesh);
         this.add(this.lightbulbMesh);
+        meshes.push(this.supportMesh);
+        meshes.push(this.coneMesh);
+        meshes.push(this.lightbulbMesh);
     }
 }
 
+//auxiliary object to be targeted the spotlights
 class LightTarget extends THREE.Object3D {
     constructor(x,y,z) {
         super();
@@ -346,6 +369,7 @@ class LightTarget extends THREE.Object3D {
         this.mesh = new Mesh(this.geo, this.material);
 
         this.add(this.mesh);
+        meshes.push(this.mesh);
     }
 }
 
@@ -365,17 +389,17 @@ class Mesh extends THREE.Mesh {
 
 // ------ CAMERAS ------ //
 
-
+//scene camera (5)
 function createCamera1() {
     camera[0] = new THREE.PerspectiveCamera(100,
         window.innerWidth / window.innerHeight, 1, 1000);
     camera[0].position.x = 0;
-    camera[0].position.y = 40;
+    camera[0].position.y = 100;
     camera[0].position.z = 150;
     camera[0].lookAt(scene.position);
 }
 
-
+//painting camera (6)
 function createCamera2() {
     camera[1] = new THREE.OrthographicCamera(
         frustumSize / -2 - 75,
@@ -411,18 +435,22 @@ function addLines(obj, lineHeight, Width, Height) {
         geometry = new THREE.BoxGeometry(Width, lineHeight, 1, 10, 10, 1);
         mesh = new Mesh(geometry, lineMaterial);
         mesh.phongMaterial.shininess = 100;
+        mesh.phongMaterial.specular.setHex(0x666666);
         mesh.position.y = horizontalPos
         mesh.position.z += 0.01 // "zindex"
         obj.add(mesh);
+        meshes.push(mesh);
         horizontalPos -= horizontalOffset
     }
     for (let j = 0; j < 11; j++) {
         geometry = new THREE.BoxGeometry(lineHeight, Height, 1, 10, 10, 1);
         mesh = new Mesh(geometry, lineMaterial);
         mesh.phongMaterial.shininess = 100;
+        mesh.phongMaterial.specular.setHex(0x666666);
         mesh.position.x = verticalPos
         mesh.position.z += 0.01 // "zindex"
         obj.add(mesh);
+        meshes.push(mesh);
         verticalPos -= verticalOffset
     }
 }
@@ -445,11 +473,14 @@ function addDots(obj, Width, Height) {
         for (let j = 0; j < 11; j++) {
             geometry = new THREE.CylinderGeometry(1.5, 1.5, 1, 15);
             mesh = new Mesh(geometry, dotMaterial);
+            mesh.phongMaterial.shininess = 100;
+            mesh.phongMaterial.specular.setHex(0x666666);
             mesh.position.x = verticalPos
             mesh.position.y = horizontalPos
             mesh.position.z += 0.02 // "zindex"
             mesh.rotateX(Math.PI / 2);
             obj.add(mesh);
+            meshes.push(mesh);
             verticalPos -= verticalOffset
         }
         horizontalPos -= horizontalOffset
@@ -458,6 +489,7 @@ function addDots(obj, Width, Height) {
 
 }
 
+//ambient light
 function createGlobalLight() {
     globalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     globalLight.position.set(0, 10, 10);
@@ -476,6 +508,7 @@ function createLightTargets() {
     scene.add(lightTarget[3]);
 }
 
+//spotlights
 function createLight(x,y,z,i) {
     light[i] = new THREE.SpotLight( 0xffffff, 5, 100, Math.PI/4, 0, 1);
     light[i].position.set(x,y,z);
@@ -507,7 +540,7 @@ function createScene() {
     wall = new Wall(0, 0, -40);
     floor = new Floor(0, -75, 0);
     support = new Support(75, -70, 0);
-    sculpture = new Sculpture(70, -36 + 10 * PHI, 20);
+    sculpture = new Sculpture(70, -36 + 10 * PHI, 12);
     painting = new Painting(-80, 0, -37.5);
 
     scene.add(wall);
@@ -620,15 +653,14 @@ function handleInput() {
 
     if (KeyboardState[69] && !wasPressed[69]) {
         //E
-        scene.traverse(function (node) {
-            if (node instanceof Mesh && node.material != node.basicMaterial) {
-                if (node.material == node.phongMaterial)
-                    node.material = node.lambertMaterial
+        for (var el of meshes) {
+            if (el.material != el.basicMaterial) {
+                if (el.material == el.phongMaterial)
+                    el.material = el.lambertMaterial
                 else
-                    node.material = node.phongMaterial
-
+                    el.material = el.phongMaterial
             }
-        });
+        }
         wasPressed[69] = true;
     } else if (!KeyboardState[69] && wasPressed[69]) {
         wasPressed[69] = false;
@@ -644,15 +676,13 @@ function handleInput() {
 
     if (KeyboardState[87] && !wasPressed[87]) {
         //W
+        for (var el of meshes) {
+            if (el.material == el.basicMaterial)
+                el.material = el.phongMaterial
+            else
+                el.material = el.basicMaterial
+        }
         wasPressed[87] = true;
-        scene.traverse(function (node) {
-            if (node instanceof Mesh) {
-                if (node.material == node.basicMaterial)
-                    node.material = node.phongMaterial
-                else
-                    node.material = node.basicMaterial
-            }
-        });
     } else if (!KeyboardState[87] && wasPressed[87]) {
         wasPressed[87] = false;
     }
