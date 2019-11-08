@@ -11,8 +11,6 @@ var wall, floor, painting, sculpture, support;
 var spotlight = new Array(4).fill(null);
 var scene, renderer, geometry, material, mesh;
 
-var meshes = []; //array of all meshes
-
 var globalLight;
 var light = new Array(4).fill(null);
 var lightTarget = new Array(4).fill(null);
@@ -84,7 +82,6 @@ class Floor extends THREE.Object3D {
         this.mesh.phongMaterial.shininess = 200;
         this.mesh.phongMaterial.specular.setHex(0xaaaaaa);
         this.add(this.mesh);
-        meshes.push(this.mesh);
     }
 }
 
@@ -117,7 +114,6 @@ class Wall extends THREE.Object3D {
         this.mesh.phongMaterial.shininess = 50;
         this.mesh.phongMaterial.specular.setHex(0x333333);
         this.add(this.mesh);
-        meshes.push(this.mesh);
     }
 }
 
@@ -175,8 +171,6 @@ class Painting extends THREE.Object3D {
         this.backgroundMesh.phongMaterial.specular.setHex(0x666666);
         this.add(this.backgroundMesh)
         this.add(this.frameMesh)
-        meshes.push(this.backgroundMesh);
-        meshes.push(this.frameMesh);
 
         addLines(this, this.lineHeight, this.width, this.height);
         addDots(this, this.width, this.height);
@@ -249,7 +243,6 @@ class Sculpture extends THREE.Object3D {
         this.mesh.phongMaterial.specular.setHex(0xffffff);
         this.geometry.computeFaceNormals();
         this.add(this.mesh);
-        meshes.push(this.mesh);
     }
 }
 class Support extends THREE.Object3D {
@@ -295,9 +288,6 @@ class Support extends THREE.Object3D {
         this.add(this.bottomMesh);
         this.add(this.middleMesh);
         this.add(this.topMesh);
-        meshes.push(this.bottomMesh);
-        meshes.push(this.middleMesh);
-        meshes.push(this.topMesh);
     }
 }
 
@@ -344,9 +334,6 @@ class Spotlight extends THREE.Object3D {
         this.add(this.supportMesh);
         this.add(this.coneMesh);
         this.add(this.lightbulbMesh);
-        meshes.push(this.supportMesh);
-        meshes.push(this.coneMesh);
-        meshes.push(this.lightbulbMesh);
     }
 }
 
@@ -369,7 +356,6 @@ class LightTarget extends THREE.Object3D {
         this.mesh = new Mesh(this.geo, this.material);
 
         this.add(this.mesh);
-        meshes.push(this.mesh);
     }
 }
 
@@ -439,7 +425,6 @@ function addLines(obj, lineHeight, Width, Height) {
         mesh.position.y = horizontalPos
         mesh.position.z += 0.01 // "zindex"
         obj.add(mesh);
-        meshes.push(mesh);
         horizontalPos -= horizontalOffset
     }
     for (let j = 0; j < 11; j++) {
@@ -450,7 +435,6 @@ function addLines(obj, lineHeight, Width, Height) {
         mesh.position.x = verticalPos
         mesh.position.z += 0.01 // "zindex"
         obj.add(mesh);
-        meshes.push(mesh);
         verticalPos -= verticalOffset
     }
 }
@@ -480,7 +464,6 @@ function addDots(obj, Width, Height) {
             mesh.position.z += 0.02 // "zindex"
             mesh.rotateX(Math.PI / 2);
             obj.add(mesh);
-            meshes.push(mesh);
             verticalPos -= verticalOffset
         }
         horizontalPos -= horizontalOffset
@@ -601,89 +584,89 @@ function animate() {
     render();
 }
 
+function toggleLight(i, e) {
+    light[i].visible = !light[i].visible;
+    wasPressed[e] = true;
+}
+
+function selectCamera(i, e) {
+    current_camera = i;
+    wasPressed[e] = true;
+}
+
+function switchMaterial() {
+    scene.traverse(function (node) {
+        if (node instanceof Mesh && node.material != node.basicMaterial) {
+            if (node.material == node.phongMaterial)
+                node.material = node.lambertMaterial
+            else
+                node.material = node.phongMaterial
+        }
+    });
+    wasPressed[69] = true;
+}
+
+function disableGlobalLight() {
+    globalLight.visible = !globalLight.visible
+    wasPressed[81] = true;
+}
+
+function disableLighting() {
+    scene.traverse(function (node) {
+        if (node instanceof Mesh) {
+            if (node.material == node.basicMaterial)
+                node.material = node.phongMaterial
+            else
+                node.material = node.basicMaterial
+        }
+    });
+    wasPressed[87] = true;
+}
+
 //handles keypresses
 function handleInput() {
-    if (KeyboardState[49] && !wasPressed[49]) {
-        //1
-        light[0].visible = !light[0].visible;
-        wasPressed[49] = true;
-    } else if (!KeyboardState[49] && wasPressed[49]) {
+    if (KeyboardState[49] && !wasPressed[49]) //1
+        toggleLight(0, 49);
+    else if (!KeyboardState[49] && wasPressed[49])
         wasPressed[49] = false;
-    }
 
-    if (KeyboardState[50] && !wasPressed[50]) {
-        //2
-        light[1].visible = !light[1].visible;
-        wasPressed[50] = true;
-    } else if (!KeyboardState[50] && wasPressed[50]) {
+    if (KeyboardState[50] && !wasPressed[50]) //2
+        toggleLight(1, 50);
+    else if (!KeyboardState[50] && wasPressed[50])
         wasPressed[50] = false;
-    }
 
-    if (KeyboardState[51] && !wasPressed[51]) {
-        //3
-        light[2].visible = !light[2].visible;
-        wasPressed[51] = true;
-    } else if (!KeyboardState[51] && wasPressed[51]) {
+    if (KeyboardState[51] && !wasPressed[51]) //3
+        toggleLight(2, 51);
+    else if (!KeyboardState[51] && wasPressed[51])
         wasPressed[51] = false;
-    }
 
-    if (KeyboardState[52] && !wasPressed[52]) {
-        //4
-        light[3].visible = !light[3].visible;
-        wasPressed[52] = true;
-    } else if (!KeyboardState[52] && wasPressed[52]) {
+    if (KeyboardState[52] && !wasPressed[52]) //4
+        toggleLight(3, 52);
+    else if (!KeyboardState[52] && wasPressed[52])
         wasPressed[52] = false;
-    }
 
-    if (KeyboardState[53] && !wasPressed[53]) {
-        //5
-        current_camera = 0;
-        wasPressed[53] = true;
-    } else if (!KeyboardState[53] && wasPressed[53]) {
+    if (KeyboardState[53] && !wasPressed[53]) //5
+        selectCamera(0, 53);
+    else if (!KeyboardState[53] && wasPressed[53])
         wasPressed[53] = false;
-    }
 
-    if (KeyboardState[54] && !wasPressed[54]) {
-        //6
-        current_camera = 1;
-        wasPressed[54] = true;
-    } else if (!KeyboardState[54] && wasPressed[54]) {
+    if (KeyboardState[54] && !wasPressed[54]) //6
+        selectCamera(1, 54);
+    else if (!KeyboardState[54] && wasPressed[54])
         wasPressed[54] = false;
-    }
 
-    if (KeyboardState[69] && !wasPressed[69]) {
-        //E
-        for (var el of meshes) {
-            if (el.material != el.basicMaterial) {
-                if (el.material == el.phongMaterial)
-                    el.material = el.lambertMaterial
-                else
-                    el.material = el.phongMaterial
-            }
-        }
-        wasPressed[69] = true;
-    } else if (!KeyboardState[69] && wasPressed[69]) {
+    if (KeyboardState[69] && !wasPressed[69]) //E
+        switchMaterial();
+    else if (!KeyboardState[69] && wasPressed[69])
         wasPressed[69] = false;
-    }
 
-    if (KeyboardState[81] && !wasPressed[81]) {
-        //Q
-        globalLight.visible = !globalLight.visible
-        wasPressed[81] = true;
-    } else if (!KeyboardState[81] && wasPressed[81]) {
+    if (KeyboardState[81] && !wasPressed[81]) //Q
+        disableGlobalLight();
+    else if (!KeyboardState[81] && wasPressed[81])
         wasPressed[81] = false;
-    }
 
-    if (KeyboardState[87] && !wasPressed[87]) {
-        //W
-        for (var el of meshes) {
-            if (el.material == el.basicMaterial)
-                el.material = el.phongMaterial
-            else
-                el.material = el.basicMaterial
-        }
-        wasPressed[87] = true;
-    } else if (!KeyboardState[87] && wasPressed[87]) {
+    if (KeyboardState[87] && !wasPressed[87]) //W
+        disableLighting();
+    else if (!KeyboardState[87] && wasPressed[87])
         wasPressed[87] = false;
-    }
 }
