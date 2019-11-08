@@ -19,8 +19,6 @@ var aspectRatio = window.innerHeight / window.innerWidth;
 var widthHeight = new THREE.Vector2(window.innerWidth, window.innerHeight);
 var frustumSize = 250;
 
-var currentTime, previousTime, timeInterval;
-
 var KeyboardState = {
     49: false, //1
     50: false, //2
@@ -572,9 +570,6 @@ function render() {
 }
 
 function update() {
-    currentTime = new Date().getTime();
-    timeInterval = currentTime - previousTime;
-    previousTime = currentTime;
     handleInput();
 }
 
