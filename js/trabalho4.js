@@ -11,7 +11,7 @@ var aspectRatio = window.innerHeight / window.innerWidth;
 var widthHeight = new THREE.Vector2(window.innerWidth, window.innerHeight);
 var frustumSize = 250;
 
-var board, ball, dice;
+var board, ball, dice, pauseScreen;
 
 var stopTime = false,
   resetScene = false,
@@ -49,7 +49,7 @@ var wasPressed = {
 
 // ------ INPUT DETECTION ------ //
 
-onkeydown = onkeyup = function(e) {
+onkeydown = onkeyup = function (e) {
   KeyboardState[e.keyCode] = e.type == "keydown";
 };
 
@@ -100,7 +100,7 @@ function createPointLight() {
 }
 
 function switchMaterials() {
-  scene.traverse(function(node) {
+  scene.traverse(function (node) {
     if (node instanceof Mesh) {
       if (node.material == node.basicMaterial)
         node.material = node.phongMaterial;
@@ -123,7 +123,11 @@ function createScene() {
 
   dice = new Dice();
   scene.add(dice);
+
+  pauseScreen = new PauseScreen();
+  scene.add(pauseScreen)
 }
+
 
 function init() {
   renderer = new THREE.WebGLRenderer({
@@ -414,14 +418,14 @@ class Dice extends THREE.Object3D {
       diceLoader.load("./assets/dice6.jpg")
     ];
     //var diceBumpMap = diceLoader.load("./assets/cube_bump.png");
-    var basicMaterialArguments = diceTextures.map(function(texture) {
+    var basicMaterialArguments = diceTextures.map(function (texture) {
       return {
         wireframe: false,
         map: texture
       };
     });
 
-    var phongMaterialArguments = diceTextures.map(function(texture) {
+    var phongMaterialArguments = diceTextures.map(function (texture) {
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       texture.repeat.set(1, 1);
       return {
@@ -453,8 +457,29 @@ class Dice extends THREE.Object3D {
   }
 }
 
+class PauseScreen extends THREE.Object3D {
+  constructor() {
+    super()
+    var messageTexture = new THREE.TextureLoader().load("./assets/pause.jpeg");
+    messageTexture.wrapS = messageTexture.wrapT = THREE.RepeatWrapping;
+    messageTexture.repeat.set(1, 1);
+
+    var material = new THREE.MeshBasicMaterial({
+      wireframe: false,
+      visible: false,
+      map: messageTexture
+    });
+    var geometry = new THREE.BoxGeometry(window.innerWidth, 1, window.innerHeight, 5, 1, 5)
+
+    pauseScreen = new THREE.Mesh(geometry, material);
+
+    this.add(pauseScreen)
+  }
+}
+
 function update() {
   if (stopTime) {
+    pauseScreen.visible = !pauseScreen.visible;
     if (resetScene) {
       resetScene = false;
       //This is not needed i think, createScene will override objects(dont know if its enough yet)
