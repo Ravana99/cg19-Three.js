@@ -266,6 +266,7 @@ class Board extends THREE.Object3D {
   constructor() {
     super();
     this.name = "Board";
+    /*
     this.blackMaterial = {
       wireframe: false,
       color: 0x54451d
@@ -274,6 +275,7 @@ class Board extends THREE.Object3D {
       wireframe: false,
       color: 0xffffff
     };
+    */
 
     this.position.x = 0;
     this.position.y = -1.5;
@@ -282,6 +284,7 @@ class Board extends THREE.Object3D {
     var boardTexture = new THREE.TextureLoader().load("./assets/board.jpg");
     boardTexture.wrapS = boardTexture.wrapT = THREE.RepeatWrapping;
     boardTexture.repeat.set(1, 1);
+    var boardBumpMap = new THREE.TextureLoader().load("./assets/boardbumpmap.jpg");
 
     this.mesh = new Mesh(
       new THREE.BoxGeometry(120, 3, 120, 5, 1, 5),
@@ -292,6 +295,8 @@ class Board extends THREE.Object3D {
       {
         wireframe: false,
         shininess: 10,
+        bumpMap: boardBumpMap,
+        bumpScale: 1,
         map: boardTexture
       }
     );
@@ -410,29 +415,29 @@ class Dice extends THREE.Object3D {
 
     var diceLoader = new THREE.TextureLoader();
     var diceTextures = [
-      diceLoader.load("./assets/dice1.jpg"),
-      diceLoader.load("./assets/dice2.jpg"),
-      diceLoader.load("./assets/dice3.jpg"),
-      diceLoader.load("./assets/dice4.jpg"),
-      diceLoader.load("./assets/dice5.jpg"),
-      diceLoader.load("./assets/dice6.jpg")
+      [diceLoader.load("./assets/dice1.jpg"), diceLoader.load("./assets/dice1bump.jpg")],
+      [diceLoader.load("./assets/dice2.jpg"), diceLoader.load("./assets/dice2bump.jpg")],
+      [diceLoader.load("./assets/dice3.jpg"), diceLoader.load("./assets/dice3bump.jpg")],
+      [diceLoader.load("./assets/dice4.jpg"), diceLoader.load("./assets/dice4bump.jpg")],
+      [diceLoader.load("./assets/dice5.jpg"), diceLoader.load("./assets/dice5bump.jpg")],
+      [diceLoader.load("./assets/dice6.jpg"), diceLoader.load("./assets/dice6bump.jpg")]
     ];
-    //var diceBumpMap = diceLoader.load("./assets/cube_bump.png");
-    var basicMaterialArguments = diceTextures.map(function (texture) {
+
+    var basicMaterialArguments = diceTextures.map(function (el) {
       return {
         wireframe: false,
-        map: texture
+        map: el[0]
       };
     });
 
-    var phongMaterialArguments = diceTextures.map(function (texture) {
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(1, 1);
+    var phongMaterialArguments = diceTextures.map(function (el) {
+      el[0].wrapS = el[0].wrapT = THREE.RepeatWrapping;
+      el[0].repeat.set(1, 1);
       return {
         wireframe: false,
-        map: texture,
-        //bumpMap: cubeBumpMap,
-        //bumpScale: 2,
+        map: el[0],
+        bumpMap: el[1],
+        bumpScale: 1,
         shininess: 10,
         specular: 0xffffff
       };
