@@ -49,7 +49,7 @@ var wasPressed = {
 
 // ------ INPUT DETECTION ------ //
 
-onkeydown = onkeyup = function (e) {
+onkeydown = onkeyup = function(e) {
   KeyboardState[e.keyCode] = e.type == "keydown";
 };
 
@@ -89,7 +89,7 @@ function createCamera2() {
 
 function createDirectionalLight() {
   directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight.position.set(8, 2, 2);
+  directionalLight.position.set(2, 2, 2);
   scene.add(directionalLight);
 }
 
@@ -100,7 +100,7 @@ function createPointLight() {
 }
 
 function switchMaterials() {
-  scene.traverse(function (node) {
+  scene.traverse(function(node) {
     if (node instanceof Mesh) {
       if (node.material == node.basicMaterial)
         node.material = node.phongMaterial;
@@ -125,9 +125,8 @@ function createScene() {
   scene.add(dice);
 
   pauseScreen = new PauseScreen();
-  scene.add(pauseScreen)
+  scene.add(pauseScreen);
 }
-
 
 function init() {
   renderer = new THREE.WebGLRenderer({
@@ -266,17 +265,6 @@ class Board extends THREE.Object3D {
   constructor() {
     super();
     this.name = "Board";
-    /*
-    this.blackMaterial = {
-      wireframe: false,
-      color: 0x54451d
-    };
-    this.whiteMaterial = {
-      wireframe: false,
-      color: 0xffffff
-    };
-    */
-
     this.position.x = 0;
     this.position.y = -1.5;
     this.position.z = 0;
@@ -284,7 +272,9 @@ class Board extends THREE.Object3D {
     var boardTexture = new THREE.TextureLoader().load("./assets/board.jpg");
     boardTexture.wrapS = boardTexture.wrapT = THREE.RepeatWrapping;
     boardTexture.repeat.set(1, 1);
-    var boardBumpMap = new THREE.TextureLoader().load("./assets/boardbumpmap.jpg");
+    var boardBumpMap = new THREE.TextureLoader().load(
+      "./assets/boardbumpmap.jpg"
+    );
 
     this.mesh = new Mesh(
       new THREE.BoxGeometry(120, 3, 120, 5, 1, 5),
@@ -302,35 +292,6 @@ class Board extends THREE.Object3D {
     );
 
     this.add(this.mesh);
-    /*this.meshes = [];
-    
-    let x = -52.5,
-      z = -52.5,
-      mesh,
-      currentMaterial;
-    for (let i = 0; i < 8; i++) {
-      for (let j = 0; j < 8; j++) {
-        if ((i % 2 == 0 && j % 2 == 0) || (i % 2 != 0 && j % 2 != 0))
-          currentMaterial = this.whiteMaterial;
-        else currentMaterial = this.blackMaterial;
-        //BoxGeometry(width, height, depth, widthSegments, heightSegments, depthSegments)
-        mesh = new Mesh(
-          new THREE.BoxGeometry(15, 3, 15, 5, 1, 5),
-          currentMaterial,
-          currentMaterial
-        );
-        //mesh.phongMaterial.shininess = 400;
-        //mesh.phongMaterial.specular.setHex(0xeeeeee);
-        mesh.position.x = x;
-        mesh.position.y = 0;
-        mesh.position.z = z;
-        this.add(mesh);
-        this.meshes.push(mesh);
-        x += 15;
-      }
-      z += 15;
-      x = -52.5;
-    }*/
   }
   toggleWireFrame() {
     this.mesh.toggleWireFrame();
@@ -341,7 +302,7 @@ class Ball extends THREE.Object3D {
   constructor() {
     super();
     this.name = "Ball";
-    this.add(new THREE.AxesHelper(50));
+    this.add(new THREE.AxesHelper(100));
     this.material = {
       wireframe: false,
       color: 0xffcb40
@@ -415,22 +376,40 @@ class Dice extends THREE.Object3D {
 
     var diceLoader = new THREE.TextureLoader();
     var diceTextures = [
-      [diceLoader.load("./assets/dice1.jpg"), diceLoader.load("./assets/dice1bump.jpg")],
-      [diceLoader.load("./assets/dice2.jpg"), diceLoader.load("./assets/dice2bump.jpg")],
-      [diceLoader.load("./assets/dice3.jpg"), diceLoader.load("./assets/dice3bump.jpg")],
-      [diceLoader.load("./assets/dice4.jpg"), diceLoader.load("./assets/dice4bump.jpg")],
-      [diceLoader.load("./assets/dice5.jpg"), diceLoader.load("./assets/dice5bump.jpg")],
-      [diceLoader.load("./assets/dice6.jpg"), diceLoader.load("./assets/dice6bump.jpg")]
+      [
+        diceLoader.load("./assets/dice1.jpg"),
+        diceLoader.load("./assets/dice1bump.jpg")
+      ],
+      [
+        diceLoader.load("./assets/dice2.jpg"),
+        diceLoader.load("./assets/dice2bump.jpg")
+      ],
+      [
+        diceLoader.load("./assets/dice3.jpg"),
+        diceLoader.load("./assets/dice3bump.jpg")
+      ],
+      [
+        diceLoader.load("./assets/dice4.jpg"),
+        diceLoader.load("./assets/dice4bump.jpg")
+      ],
+      [
+        diceLoader.load("./assets/dice5.jpg"),
+        diceLoader.load("./assets/dice5bump.jpg")
+      ],
+      [
+        diceLoader.load("./assets/dice6.jpg"),
+        diceLoader.load("./assets/dice6bump.jpg")
+      ]
     ];
 
-    var basicMaterialArguments = diceTextures.map(function (el) {
+    var basicMaterialArguments = diceTextures.map(function(el) {
       return {
         wireframe: false,
         map: el[0]
       };
     });
 
-    var phongMaterialArguments = diceTextures.map(function (el) {
+    var phongMaterialArguments = diceTextures.map(function(el) {
       el[0].wrapS = el[0].wrapT = THREE.RepeatWrapping;
       el[0].repeat.set(1, 1);
       return {
@@ -449,7 +428,7 @@ class Dice extends THREE.Object3D {
       phongMaterialArguments
     );
     this.mesh.rotation.z = Math.PI / 4;
-    this.mesh.rotation.x = 35.26;
+    this.mesh.rotation.x = (35.26 * Math.PI) / 180;
     this.add(this.mesh);
   }
 
@@ -464,37 +443,49 @@ class Dice extends THREE.Object3D {
 
 class PauseScreen extends THREE.Object3D {
   constructor() {
-    super()
+    super();
     var messageTexture = new THREE.TextureLoader().load("./assets/pause.jpeg");
     messageTexture.wrapS = messageTexture.wrapT = THREE.RepeatWrapping;
     messageTexture.repeat.set(1, 1);
 
+    this.position.x = 0;
+    this.position.y = 20;
+    this.position.z = 0;
+
     var material = new THREE.MeshBasicMaterial({
       wireframe: false,
-      visible: false,
+      visible: true,
       map: messageTexture
     });
-    var geometry = new THREE.BoxGeometry(window.innerWidth, 1, window.innerHeight, 5, 1, 5)
+    console.log(window.innerWidth);
+    var geometry = new THREE.BoxGeometry(300, 1, 130, 5, 1, 5);
 
     pauseScreen = new THREE.Mesh(geometry, material);
 
-    this.add(pauseScreen)
+    this.add(pauseScreen);
   }
 }
 
 function update() {
   if (stopTime) {
-    pauseScreen.visible = !pauseScreen.visible;
+    pauseScreen.visible = true;
     if (resetScene) {
       resetScene = false;
-      //This is not needed i think, createScene will override objects(dont know if its enough yet)
-      //while (scene.children.length > 0) {
-      //    scene.remove(scene.children[0]);
-      //}
-      createScene();
-      createDirectionalLight();
+      ball.mesh.position.z = 45;
+      ball.mesh.rotation.z = 0;
+      if (ball.mesh.position.z < 0) ball.rotation.y = Math.PI;
+      else ball.rotation.y = 0;
+      ball.startStop = false;
+      ball.currentVelocity = 0;
+
+      dice.rotation.y = 0;
+      current_camera = 1;
+      if (ball.mesh.material == ball.mesh.basicMaterial) switchMaterials();
+      pauseScreen.visible = false;
+      stopTime = false;
     }
   } else {
+    pauseScreen.visible = false;
     currentTime = new Date().getTime();
     timeInterval = currentTime - previousTime;
     previousTime = currentTime;
