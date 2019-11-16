@@ -3,7 +3,7 @@
 "use strict";
 
 var camera = new Array(3).fill(null);
-var current_camera = 1;
+var current_camera = 1, cameraBeforePause = 1;
 
 var scene, renderer;
 
@@ -15,7 +15,8 @@ var board, ball, dice, pauseScreen;
 
 var stopTime = false,
   resetScene = false,
-  displayWireFrame = false;
+  displayWireFrame = false,
+  correctPosition = false;
 
 var currentTime, previousTime, timeInterval;
 var angularVelocity = 0.009;
@@ -49,7 +50,7 @@ var wasPressed = {
 
 // ------ INPUT DETECTION ------ //
 
-onkeydown = onkeyup = function(e) {
+onkeydown = onkeyup = function (e) {
   KeyboardState[e.keyCode] = e.type == "keydown";
 };
 
@@ -100,7 +101,7 @@ function createPointLight() {
 }
 
 function switchMaterials() {
-  scene.traverse(function(node) {
+  scene.traverse(function (node) {
     if (node instanceof Mesh) {
       if (node.material == node.basicMaterial)
         node.material = node.phongMaterial;
@@ -113,7 +114,6 @@ function switchMaterials() {
 
 function createScene() {
   scene = new THREE.Scene();
-  scene.add(new THREE.AxesHelper(100));
 
   board = new Board();
   scene.add(board);
@@ -176,15 +176,17 @@ function selectCamera(i, e) {
 
 //handles keypresses
 function handleInput() {
-  if (KeyboardState[49] && !wasPressed[49]) {
+  if (KeyboardState[49] && !wasPressed[49] && !stopTime) {
     //1
     current_camera = 0;
+    cameraBeforePause = current_camera
     wasPressed[49] = true;
   } else if (!KeyboardState[49] && wasPressed[49]) wasPressed[49] = false;
 
-  if (KeyboardState[50] && !wasPressed[50]) {
+  if (KeyboardState[50] && !wasPressed[50] && !stopTime) {
     //2
     current_camera = 1;
+    cameraBeforePause = current_camera
     wasPressed[50] = true;
   } else if (!KeyboardState[50] && wasPressed[50]) wasPressed[50] = false;
 
@@ -221,6 +223,8 @@ function handleInput() {
   if (KeyboardState[83] && !wasPressed[83]) {
     //S
     stopTime = !stopTime;
+    if (stopTime)
+      cameraBeforePause = current_camera
     wasPressed[83] = true;
   } else if (!KeyboardState[83] && wasPressed[83]) wasPressed[83] = false;
 
@@ -302,7 +306,6 @@ class Ball extends THREE.Object3D {
   constructor() {
     super();
     this.name = "Ball";
-    this.add(new THREE.AxesHelper(100));
     this.material = {
       wireframe: false,
       color: 0xffcb40
@@ -320,20 +323,17 @@ class Ball extends THREE.Object3D {
 
     this.mesh = new Mesh(
       new THREE.SphereGeometry(8, 20, 20),
-      [
-        {
-          wireframe: false,
-          map: ballTexture
-        }
-      ],
-      [
-        {
-          wireframe: false,
-          map: ballTexture,
-          shininess: 80,
-          specular: 0xeaeaea
-        }
-      ]
+      {
+        wireframe: false,
+        map: ballTexture
+      }
+      ,
+      {
+        wireframe: false,
+        map: ballTexture,
+        shininess: 80,
+        specular: 0xeaeaea
+      }
     );
     this.mesh.position.y = 0;
     this.mesh.position.z = 45;
@@ -367,7 +367,6 @@ class Ball extends THREE.Object3D {
 class Dice extends THREE.Object3D {
   constructor() {
     super();
-    this.add(new THREE.AxesHelper(50));
     this.name = "Dice";
 
     this.position.x = 0;
@@ -402,14 +401,14 @@ class Dice extends THREE.Object3D {
       ]
     ];
 
-    var basicMaterialArguments = diceTextures.map(function(el) {
+    var basicMaterialArguments = diceTextures.map(function (el) {
       return {
         wireframe: false,
         map: el[0]
       };
     });
 
-    var phongMaterialArguments = diceTextures.map(function(el) {
+    var phongMaterialArguments = diceTextures.map(function (el) {
       el[0].wrapS = el[0].wrapT = THREE.RepeatWrapping;
       el[0].repeat.set(1, 1);
       return {
@@ -433,7 +432,12 @@ class Dice extends THREE.Object3D {
   }
 
   toggleWireFrame() {
-    this.mesh.toggleWireFrame();
+    this.mesh.phongMaterial.map(function (el) {
+      el.wireframe = !el.wireframe
+    })
+    this.mesh.basicMaterial.map(function (el) {
+      el.wireframe = !el.wireframe
+    })
   }
 
   setRotationY() {
@@ -467,24 +471,41 @@ class PauseScreen extends THREE.Object3D {
 }
 
 function update() {
+  //console.log(ball.rotation.y)
+  if (ball.rotation.y > 1.49) {
+    correctPosition = true
+  }
+  else if (ball.rotation.y < -1.49 && correctPosition) {
+    correctPosition = false
+  }
+
   if (stopTime) {
     pauseScreen.visible = true;
+    current_camera = 1
     if (resetScene) {
-      resetScene = false;
       ball.mesh.position.z = 45;
       ball.mesh.rotation.z = 0;
-      if (ball.mesh.position.z < 0) ball.rotation.y = Math.PI;
+      if (correctPosition)
+        ball.rotation.y = Math.PI;
       else ball.rotation.y = 0;
-      ball.startStop = false;
-      ball.currentVelocity = 0;
+
+
 
       dice.rotation.y = 0;
       current_camera = 1;
       if (ball.mesh.material == ball.mesh.basicMaterial) switchMaterials();
+
+      ball.currentVelocity = 0;
+      ball.startStop = false;
       pauseScreen.visible = false;
       stopTime = false;
+      correctPosition = false
+      resetScene = false;
+      directionalLight.visible = true
+      pointLight.visible = true
     }
   } else {
+    current_camera = cameraBeforePause
     pauseScreen.visible = false;
     currentTime = new Date().getTime();
     timeInterval = currentTime - previousTime;
@@ -518,6 +539,5 @@ function update() {
     ball.moveBall();
     dice.setRotationY();
   }
-
   handleInput();
 }
