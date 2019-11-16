@@ -17,6 +17,7 @@ var stopTime = false,
   resetScene = false,
   displayWireFrame = false,
   correctPosition = false;
+var wireFrameOn = false;
 
 var currentTime, previousTime, timeInterval;
 var angularVelocity = 0.009;
@@ -190,25 +191,25 @@ function handleInput() {
     wasPressed[50] = true;
   } else if (!KeyboardState[50] && wasPressed[50]) wasPressed[50] = false;
 
-  if (KeyboardState[66] && !wasPressed[66]) {
+  if (KeyboardState[66] && !wasPressed[66] && !stopTime) {
     //B
     ball.setStartStop();
     wasPressed[66] = true;
   } else if (!KeyboardState[66] && wasPressed[66]) wasPressed[66] = false;
 
-  if (KeyboardState[68] && !wasPressed[68]) {
+  if (KeyboardState[68] && !wasPressed[68] && !stopTime) {
     //D
     directionalLight.visible = !directionalLight.visible;
     wasPressed[68] = true;
   } else if (!KeyboardState[68] && wasPressed[68]) wasPressed[68] = false;
 
-  if (KeyboardState[76] && !wasPressed[76]) {
+  if (KeyboardState[76] && !wasPressed[76] && !stopTime) {
     //L
     calculateLighting = true;
     wasPressed[76] = true;
   } else if (!KeyboardState[76] && wasPressed[76]) wasPressed[76] = false;
 
-  if (KeyboardState[80] && !wasPressed[80]) {
+  if (KeyboardState[80] && !wasPressed[80] && !stopTime) {
     //P
     pointLight.visible = !pointLight.visible;
     wasPressed[80] = true;
@@ -228,7 +229,7 @@ function handleInput() {
     wasPressed[83] = true;
   } else if (!KeyboardState[83] && wasPressed[83]) wasPressed[83] = false;
 
-  if (KeyboardState[87] && !wasPressed[87]) {
+  if (KeyboardState[87] && !wasPressed[87] && !stopTime) {
     //W
     displayWireFrame = true;
     wasPressed[87] = true;
@@ -461,7 +462,6 @@ class PauseScreen extends THREE.Object3D {
       visible: true,
       map: messageTexture
     });
-    console.log(window.innerWidth);
     var geometry = new THREE.BoxGeometry(300, 1, 130, 5, 1, 5);
 
     pauseScreen = new THREE.Mesh(geometry, material);
@@ -471,51 +471,52 @@ class PauseScreen extends THREE.Object3D {
 }
 
 function update() {
-  //console.log(ball.rotation.y)
-  if (ball.rotation.y > 1.49) {
-    correctPosition = true
-  }
-  else if (ball.rotation.y < -1.49 && correctPosition) {
-    correctPosition = false
-  }
+
+  currentTime = new Date().getTime();
+  timeInterval = currentTime - previousTime;
+  previousTime = currentTime;
 
   if (stopTime) {
     pauseScreen.visible = true;
-    current_camera = 1
+    current_camera = 1;
+
     if (resetScene) {
+      ball.rotation.x = 0;
+      ball.rotation.y = 0;
+      ball.rotation.z = 0;
       ball.mesh.position.z = 45;
       ball.mesh.rotation.z = 0;
-      if (correctPosition)
-        ball.rotation.y = Math.PI;
-      else ball.rotation.y = 0;
-
-
 
       dice.rotation.y = 0;
       current_camera = 1;
       if (ball.mesh.material == ball.mesh.basicMaterial) switchMaterials();
 
+      cameraBeforePause = 1;
       ball.currentVelocity = 0;
       ball.startStop = false;
       pauseScreen.visible = false;
       stopTime = false;
-      correctPosition = false
       resetScene = false;
       directionalLight.visible = true
       pointLight.visible = true
+
+      if (wireFrameOn) {
+        wireFrameOn = false;
+        board.toggleWireFrame();
+        dice.toggleWireFrame();
+        ball.toggleWireFrame();
+      }
     }
   } else {
     current_camera = cameraBeforePause
     pauseScreen.visible = false;
-    currentTime = new Date().getTime();
-    timeInterval = currentTime - previousTime;
-    previousTime = currentTime;
 
     if (displayWireFrame) {
       displayWireFrame = false;
       board.toggleWireFrame();
       dice.toggleWireFrame();
       ball.toggleWireFrame();
+      wireFrameOn = !wireFrameOn;
     }
 
     if (calculateLighting) {
