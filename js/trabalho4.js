@@ -315,14 +315,14 @@ class Ball extends THREE.Object3D {
     this.currentVelocity = 0;
 
     this.position.x = 0;
-    this.position.y = 8;
+    this.position.y = 12;
     this.position.z = 0;
 
     var ballTexture = new THREE.TextureLoader().load("./assets/ball.png");
     ballTexture.wrapS = ballTexture.wrapT = THREE.ClampToEdgeWrapping;
 
     this.mesh = new Mesh(
-      new THREE.SphereGeometry(8, 20, 20),
+      new THREE.SphereGeometry(12, 20, 20),
       {
         wireframe: false,
         map: ballTexture
@@ -453,7 +453,7 @@ class PauseScreen extends THREE.Object3D {
     messageTexture.repeat.set(1, 1);
 
     this.position.x = 0;
-    this.position.y = 20;
+    this.position.y = 25;
     this.position.z = 0;
 
     var material = new THREE.MeshBasicMaterial({
